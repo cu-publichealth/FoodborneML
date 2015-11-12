@@ -1,3 +1,7 @@
 *.pyc
 *.csv
-
+*.json
+*.json.gz
+*.npy
+*.pkl
+*ipynb_checkpoints*

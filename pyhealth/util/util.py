@@ -23,3 +23,22 @@ def getLogger(app, level='DEBUG'):
     logger = logging.getLogger(app)
     return logger
     
+# NOTE SURE IF THESE ARE TOTALLY ROBUST
+# convert NoneTypes , strings, and weird types to unicodes
+def xuni(s):
+    if not s:
+        return u''
+    elif type(s) == str:
+        return unicode(s, 'utf-8')
+    elif type(s) == unicode:
+        return s.encode('utf-8')
+    else:
+        return u''
+
+def xstr(s):
+    if not s:
+        return ''
+    elif type(s) == unicode:
+        return s.encode('ascii','replace')
+    else:
+        return ''

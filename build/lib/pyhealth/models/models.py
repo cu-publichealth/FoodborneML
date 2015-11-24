@@ -24,8 +24,9 @@ logger = getLogger(__name__)
 from sqlalchemy import MetaData
 metadata = MetaData()
 import locations
-import businesses
 import documents
+import businesses
+
 
 def getDBEngine(echo=False):
     from sqlalchemy import create_engine

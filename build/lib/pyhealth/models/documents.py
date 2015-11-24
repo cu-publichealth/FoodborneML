@@ -34,7 +34,7 @@ yelp_reviews = Table('yelp_reviews', metadata,
     Column('created', DateTime),
     Column('updated_at', DateTime, default=datetime.now, onupdate=datetime.now),
     Column('business_id', String(64), nullable=False),
-    ForeignKeyConstraint( ['business_id'], ['businesses.id'], name='fk_rev_biz_id')
+    ForeignKeyConstraint( ['business_id'], ['businesses.id'], name='fk_rev_biz_id'),
     )
 mapper(YelpReview, yelp_reviews)
 

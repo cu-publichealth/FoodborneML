@@ -1,4 +1,4 @@
-e"""
+"""
 The Yelp API model
 """
 

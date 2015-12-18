@@ -39,11 +39,11 @@ from pyhealth.sources import yelp_fast as Yelp
 def download(yelp):
     """ download content from sources"""
     if yelp:
-        fname = Yelp.downloadLatestYelpData()
-        data = Yelp.unzipYelpFeed(fname)
+        # fname = Yelp.downloadLatestYelpData()
+        # data = Yelp.unzipYelpFeed(fname)
         # data = 'pyhealth/sources/yelpfiles/yelp_businesses.json'
-        Yelp.updateDBFromFeed(data, geocode=False)
-        Yelp.geocodeUnknownLocations()
+        # Yelp.updateDBFromFeed(data, geocode=False)
+        Yelp.geocodeUnknownLocations(wait_time=4)
         
     return
 

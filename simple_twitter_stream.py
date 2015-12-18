@@ -184,6 +184,9 @@ class FoodBorneStreamer(TwythonStreamer):
     def on_error(self, status_code, data):
             print "Error status code: ", status_code
             self.error_counter += 1
+            if str(status_code) == "420": 
+                print "Rate Limited: waiting a minute"
+                sleep(60)
             # if self.error_counter >= self.error_limit:
             #     self.error_counter = 0
             #     self.save_incidents()

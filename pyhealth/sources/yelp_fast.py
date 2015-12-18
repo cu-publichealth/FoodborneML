@@ -474,21 +474,22 @@ def updateDBFromFeed(filename, geocode=True):
     bizlen = len(insert_businesses) + len(update_businesses)
     if bizlen > 0:
         with db.begin():
-            logger.info("Uploading Last Batch of %i to DB...." % (len(insert_businesses) + len(update_businesses)))
+            logger.info("Uploading Batch of %i to DB...." % upload_mod)
             logger.info("Uploading Locations to DB....")
             db.bulk_insert_mappings(Location, unloaded_locations.values())
             logger.info("Uploading Yelp Categories to DB....")
             db.bulk_insert_mappings(YelpCategory, unloaded_categories.values())
+            bizlen = len(insert_businesses) + len(update_businesses)
             logger.info("Uploading %i Businesses to DB...." %bizlen)
             db.execute(businesses.insert(), insert_businesses)
-            db.execute(business.update(), update_businesses)
+            db.bulk_update_mappings(Business, update_businesses)
             revlen = len(insert_reviews) + len(update_reviews)
             logger.info("Uploading %i Business Reviews to DB...." % revlen)
             db.execute(yelp_reviews.insert(), sorted(insert_reviews, key=lambda x:x['yelp_id']))
-            db.execute(yelp_reviews.update(), update_reviews)
+            db.bulk_update_mappings(YelpReview, update_reviews)
             logger.info("Uploading %i Documents to DB...." % revlen)
             db.execute(documents.insert(), sorted(insert_documents, key=lambda x:x['id']))
-            db.execute(documents.update(), update_documents)
+            db.bulk_update_mappings(Document, update_documents)
             #there seem to be duplicate categories for a business
             #so make the associations unique
             logger.info("Uploading Business Category associations to DB....")
@@ -531,14 +532,15 @@ def geocodeUnknownLocations(wait_time=2):
     locations = []
     upload_mod = 100
     for i, location in enumerate(unknowns):
-        print location
+        print location.street_address
         logger.info("Geocoding location %i..." % i)
         try:
             geo = geoLocator.geocode(location.street_address, timeout=wait_time)
             lat = geo.latitude
             lon = geo.longitude
             logger.info("\tSuccess!")
-        except:
+        except Exception as e:
+            print "Exception: ", e
             logger.warning("\tGeocode failed, assigning NULL Lat/Long")
             lat = None
             lon = None

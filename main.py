@@ -50,11 +50,18 @@ def download(yelp):
         data = Yelp.unzipYelpFeed(fname)
         # data = 'pyhealth/sources/yelpfiles/yelp_businesses.json' # for testing w/o downloading
         Yelp.updateDBFromFeed(data, geocode=False)
-        # Yelp.geocodeUnknownLocations(wait_time=4)
         
     return
 
-# the main function DON'T TOUCH        
+@main.command()
+@click.option('-w', '--wait', default=2, help="Number of seconds before timeout")
+def geocode(wait):
+    Yelp.geocodeUnknownLocations(wait_time=wait)
+
+
+##################################
+# The MAIN function: DON'T TOUCH #
+##################################      
 if __name__ == "__main__":
     main()
 

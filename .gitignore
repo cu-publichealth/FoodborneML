@@ -5,3 +5,4 @@
 *.npy
 *.pkl
 *ipynb_checkpoints*
+settings.py

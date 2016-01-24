@@ -17,6 +17,8 @@ import StringIO
 import pstats
 import contextlib
 
+from ..settings import yelp_download_config as config
+
 @contextlib.contextmanager
 def profiled():
     pr = cProfile.Profile()
@@ -30,12 +32,6 @@ def profiled():
     # ps.print_callers()
     print s.getvalue()
 
-config = {
-    'rawdata_dir': 'pyhealth/sources/yelpfiles/', # the dir to download the yelp data from S3 to
-    'local_file': 'yelp_businesses.json.gz',
-    'bucket_name': 'yelp-syndication',
-    'bucket_dir':  'nychealth'
-    }
 
 
 def downloadURLToFile(url, data_dir, filename):

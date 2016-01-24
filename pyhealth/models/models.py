@@ -21,27 +21,23 @@ from ..util.util import getLogger
 logger = getLogger(__name__)
 
 # metadata object shared between models
-from sqlalchemy import MetaData
-metadata = MetaData()
+# # from sqlalchemy import MetaData
+# metadata = MetaData()
 import locations
 import documents
 import businesses
 
+from ..settings import database_config as config
+
 def getDBEngine(echo=False):
     from sqlalchemy import create_engine
 
-    user = 'user'
-    password = 'password'
-    # db_host = '192.168.56.101:1433/dohmh2'
-    # db_host = 'db-pc03.cs.columbia.edu:1433/dohmh'
-    db_host = '128.59.22.184:1433/dohmh'
+    user = config['user']
+    password = config['password']
+    db_host = config['dbhost']
+
     engine = create_engine('mssql+pymssql://%s:%s@%s?charset=utf8'\
         % (user, password, db_host), echo=echo )
-
-    # POSTGRES
-    # db_host = '128.59.22.184:5432/dohmh'
-    # engine = create_engine('postgresql+psycopg2://%s:%s@%s'\
-    #     % (user, password, db_host), echo=echo )
 
     logger.info("Engine created for %s::%s" % (db_host, user))
 

@@ -2,7 +2,9 @@
 The master utilities file
 
 Available utilities:
-* The logger: getLogger()
+- getLogger(__name__): get a module logger that prints to STDOUT
+- xuni(s): take a string or unicode and convert it utf8 unicode
+- xstr(s): take a unicode and convert it to ascii -- could underflow
 
 """
 

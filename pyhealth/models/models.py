@@ -21,15 +21,17 @@ from ..util.util import getLogger
 logger = getLogger(__name__)
 
 # metadata object shared between models
-# # from sqlalchemy import MetaData
-# metadata = MetaData()
+from sqlalchemy import MetaData
+metadata = MetaData()
+# import each of the used model definition files
 import locations
 import documents
 import businesses
+import download_history
 
 from ..settings import database_config as config
 
-def getDBEngine(echo=False):
+def getDBEngine(echo=False, verbose=False):
     from sqlalchemy import create_engine
 
     user = config['user']
@@ -39,7 +41,8 @@ def getDBEngine(echo=False):
     engine = create_engine('mssql+pymssql://%s:%s@%s?charset=utf8'\
         % (user, password, db_host), echo=echo )
 
-    logger.info("Engine created for %s::%s" % (db_host, user))
+    if verbose:
+        logger.info("Engine created for %s::%s" % (db_host, user))
 
     return engine
 

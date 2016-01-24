@@ -9,30 +9,15 @@ import requests
 import time
 import gzip
 
+from sqlalchemy import exists
+
 from ..util.util import getLogger, xstr, xuni
 logger = getLogger(__name__)
 
-import cProfile
-import StringIO
-import pstats
-import contextlib
-
 from ..settings import yelp_download_config as config
 
-@contextlib.contextmanager
-def profiled():
-    pr = cProfile.Profile()
-    pr.enable()
-    yield
-    pr.disable()
-    s = StringIO.StringIO()
-    ps = pstats.Stats(pr, stream=s).sort_stats('cumulative')
-    ps.print_stats()
-    # uncomment this to see who's calling what
-    # ps.print_callers()
-    print s.getvalue()
-
-
+from ..models.models import getDBSession
+from ..models.download_history import YelpDownloadHistory
 
 def downloadURLToFile(url, data_dir, filename):
     """
@@ -98,13 +83,28 @@ def downloadLatestYelpData():
 
         Note: 
             Yelp doesn't let us look at the bucket, 
-            so we just try exact filenames with presigne urls for the past month
+            so we just try exact filenames with presigned urls for the past month
     """
+    # first make sure we haven't already downloaded the file
+    db = getDBSession()
+    ydh = db.query(YelpDownloadHistory).first()
+
+    # if it doesn't exist or it's old, create the new one
+    print "YDH", ydh
+    if not ydh or not ydh.date == date.today():
+        ydh = YelpDownloadHistory()
+
+    # if we already downloaded, log and return
+    if ydh.downloaded:
+        logger.info("Already downloaded the Yelp feed for today...")
+        local_file = config['rawdata_dir'] + config['local_file']
+        return local_file
+
     # set up botocore client
     session = botocore.session.get_session()
     client = session.create_client('s3')
 
-    # try to donwload most recent data
+    # try to donwload most recent data (go up to one month back)
     for day_delta in range(31):
         # generate the correct filenmae for a day
         dateformat = '%Y%m%d'
@@ -112,14 +112,17 @@ def downloadLatestYelpData():
         day_str = day.strftime(dateformat) # eg '20151008'
         ext = '_businesses.json.gz'
         filename =  day_str + ext
-        logger.info("Attempting to get Yelp Reviews from %s....." % day.strftime("%m/%d/%Y"))
+        logger.info("Attempting to get Yelp Reviews from %s....." 
+                    % day.strftime("%m/%d/%Y"))
 
-        # generate a presigned url for the file, since yelp doesn't give us bucket access
-        url = client.generate_presigned_url('get_object',
-                                           Params={'Bucket': config['bucket_name'],
-                                                   'Key':config['bucket_dir'] +'/'+ filename },
-                                           ExpiresIn=3600 # 1 hour in seconds
-                                           )
+        # generate a presigned url for the file, 
+        # since yelp doesn't give us bucket access
+        url = client.generate_presigned_url(
+                'get_object',
+                Params={'Bucket': config['bucket_name'],
+                'Key':config['bucket_dir'] +'/'+ filename },
+                ExpiresIn=3600 # 1 hour in seconds
+                )
         # do the downloading
         print "URL: ", url
         try:
@@ -135,6 +138,9 @@ def downloadLatestYelpData():
                      Trying the day before." % day.strftime("%m/%d/%Y"))
 
     logger.info("Latest Yelp Data successfully downloaded from feed.")
+    ydh.downloaded = True
+    db.add(ydh)
+    db.commit()
     local_file = config['rawdata_dir'] + config['local_file']
     return local_file
 
@@ -142,6 +148,20 @@ def unzipYelpFeed(filename):
     """
     Take in a .gz file and unzip it, saving it with the same file name
     """
+    # first make sure we haven't already unzipped it
+    db = getDBSession()
+    ydh = db.query(YelpDownloadHistory).first()
+
+    # if it doesn't exist, error out because we need to download it
+    if not ydh or not ydh.date == date.today() or not ydh.downloaded:
+        logger.critical("Cannot unzip file for today because it wasn't downloaded")
+        return
+
+    if ydh.unzipped:
+        logger.info("Today's feed already unzipped, skipoing the unzip")
+        rawfile = filename.strip('.gz')
+        return rawfile
+
     logger.info("Extracting file: %s" % filename)
     with gzip.open(filename, 'rb') as infile:
         rawfile = filename.strip('.gz')
@@ -153,35 +173,65 @@ def unzipYelpFeed(filename):
                     print "\r Extracted %i businesses so far" % i
                 i += 1
     logger.info("Done extracting file: %s" % rawfile)
+    ydh.unzipped = True
+    db.add(ydh)
+    db.commit()
     return rawfile
 
+# for profiling
+import cProfile
+import StringIO
+import pstats
+import contextlib
+@contextlib.contextmanager
+def profiled():
+    """
+    A profiling helper function needed by kerprof to do a 
+    line by line profiling of a particular function.
+
+    To profile a function add the ```@profile``` decorator around the def
+    """
+
+    pr = cProfile.Profile()
+    pr.enable()
+    yield
+    pr.disable()
+    s = StringIO.StringIO()
+    ps = pstats.Stats(pr, stream=s).sort_stats('cumulative')
+    ps.print_stats()
+    # uncomment this to see who's calling what
+    # ps.print_callers()
+    print s.getvalue()
+
 from json import loads
-from ..models.models import getDBSession
-from ..models.businesses import Business, YelpCategory, businesses, categories, business_category_table
+
+from ..models.businesses import Business, YelpCategory
+from ..models.businesses import businesses, categories, business_category_table
 from ..models.locations import Location, locations
 from ..models.documents import YelpReview, Document, yelp_reviews, documents
 import sqlalchemy
 from sqlalchemy import desc
 
 
-#from datetime import datetime
 from geopy.geocoders import Nominatim #open street map -- free :)
 
-# @profile
+# @profile # uncomment to profile this function using the
 def updateDBFromFeed(filename, geocode=True):
     """
-    This takes in the JSOn file of all of the Yelp businesses and
+    This takes in the JSON file of all of the Yelp businesses and
     all the affiliate data (reviews, categories, etc.) and upserts them to the DB
 
     It follows the db schema used by the ORM, but doesn't use the ORM directly
     for optimization purposes.  
 
-    Where the ORM would take a week or more (estimated) to upload a completely new file of 35k businesses,
+    Where the ORM would take a week or more (estimated) to upload 
+    a completely new file of 35k businesses,
     this version does so in ~= 45 min (w/o geocode and over ethernet)
 
     DON'T mess with this code unless you know what you're doing.
     Hopefully it's well commented enough for you to figure it out if you need to.
-    But it is sensitive (relative to normal model code)
+    But it is sensitive (relative to normal model code) because of the amount of
+    data that must be transferred to the DB.
 
     Args:
         filename: the name of the unzipped Yelp JSON filename
@@ -195,11 +245,25 @@ def updateDBFromFeed(filename, geocode=True):
         None. But the database will be updated :)
 
     TODO:
-        Add a geocode unkown locations function
+        - Add a geocode unkown locations function
+        - Check if syndication has already been uploaded today
 
     """
     # database handler object
     db = getDBSession(echo=False, autoflush=False, autocommit=True)
+
+    # check YelpDownloadHistory to see if we've already uploaded the feed
+    ydh = db.query(YelpDownloadHistory).first()
+
+    # if it doesn't exist, isnt today, hasn't been downloaded or unzipped
+    if not ydh or not ydh.date == date.today() or not ydh.downloaded or not ydh.unzipped:
+        logger.critical("Can't upload todays feed if it hasn't been downloaded and unzipped")
+        return
+
+    if ydh.uploaded:
+        logger.info("Already upserted today's Yelp feed. Skipping")
+        return
+
     # geocoder for businesses w/o lat longs
     geoLocator = Nominatim()
 
@@ -210,38 +274,20 @@ def updateDBFromFeed(filename, geocode=True):
     # this part gets the skip condition
     newest = db.query(Business).order_by(desc(Business.updated_at)).first()
     
+    # check for if there's a business in the db
     if newest:
-        print newest
         most_recent = newest.updated_at
+        init_db = False
         logger.info("Last updated: %r" % most_recent.strftime('%m/%d/%Y:%M:%H:%S'))
+
+    # if not, then it's the first time we're populating it
     else:
         logger.info("First Database Population: This could take a looong time...")
         most_recent = None
-
-    start_time = time.time()
-    with db.begin():
-        db_biz_ids = set([ b.id for b in db.query(Business.id).all() ])
-        db_review_ids = set([ r.yelp_id for r in db.query(YelpReview.yelp_id).all() ])
-        db_locations = set([ l.street_address for l in db.query(Location.street_address).all() ])
-        db_categories = set([ c.alias for c in db.query(YelpCategory.alias).all() ])
-        db_biz_categories = set([ (assoc.business_id, assoc.category_alias) for assoc in db.query(business_category_table).all()])
-
-    unloaded_locations = {}
-    unloaded_categories = {}
-    insert_businesses = []
-    insert_reviews = []
-    insert_documents = []
-    update_businesses = []
-    update_reviews = []
-    update_documents = []
-    biz_cats = []
-
-
-    if len(db_biz_ids) == 0: 
         init_db = True
-    else:
-        init_db = False
 
+    # if we're initializing the db, disable the foreign key constraints
+    # this will improve upload speeds
     if init_db:
         disable_fk = """
         ALTER TABLE dbo.%s NOCHECK CONSTRAINT fk_loc;
@@ -253,20 +299,54 @@ def updateDBFromFeed(filename, geocode=True):
         with db.begin():
             db.execute(disable_fk)
 
+
+    start_time = time.time() # for timing the whole process
+
+    # get sets of uids for each data model, 
+    # so we can quickly determine if a datum needs to be updated or inserted
+    # this is much faster than querying the db every time
+    with db.begin():
+        db_biz_ids = set([ b.id 
+                        for b in db.query(Business.id).all() ])
+        db_review_ids = set([ r.yelp_id 
+                            for r in db.query(YelpReview.yelp_id).all() ])
+        db_locations = set([ l.street_address 
+                            for l in db.query(Location.street_address).all() ])
+        db_categories = set([ c.alias 
+                            for c in db.query(YelpCategory.alias).all() ])
+        db_biz_categories = set([ (assoc.business_id, assoc.category_alias) 
+                                for assoc in db.query(business_category_table).all()])
+
+    # batch upsert data structures
+    unloaded_locations = {}
+    unloaded_categories = {}
+    insert_businesses = []
+    insert_reviews = []
+    insert_documents = []
+    update_businesses = []
+    update_reviews = []
+    update_documents = []
+    biz_cats = []
+
+    # loop over json file ans upsert all data
     with open(filename, 'rb') as infile: # for unzipped files
         biz_num = 0
         biz_count = 0
         review_count = 0
-        upload_mod = 500
+        upload_mod = 500 # size of batch upload 
+
         # each business is one line
         for line in infile:
             biz_num += 1
             biz_count +=1
             logger.info("Updating Restaurant #%i...." % biz_num)
+
             current = time.time()-start_time
             m, s = divmod(current, 60)  
             h, m = divmod(m, 60)
             logger.info("Time so far: %d:%02d:%02d" % (h, m, s))
+
+            # if business doesn't load correctly, skip it
             try:
                 biz = loads(line)
             except ValueError:
@@ -308,7 +388,7 @@ def updateDBFromFeed(filename, geocode=True):
                                 'state':xstr(loc['state'])
                                 }
                 except TypeError: # so they can't get converted to float
-                    # so look them up with the geocode service
+                    # so reverse geocode them (if enabled)
                     if geocode:
                         try:
                             logger.info("No Lat/Long for restaurant, attempting to geocode...")
@@ -319,6 +399,7 @@ def updateDBFromFeed(filename, geocode=True):
                             logger.warning("Geocode failed, assigning NULL Lat/Long")
                             lat = None
                             lon = None
+                    # else ignore the lat/lons
                     else:
                         lat = None
                         lon = None
@@ -374,7 +455,8 @@ def updateDBFromFeed(filename, geocode=True):
 
             # create all of the Reviews
             for i, rev in enumerate(biz['reviews']):
-                # if the review isn't new, update it
+                # if the review isn't new, don't do anything
+                # uncomment this code to update it (significant slowdown)
                 if rev['id'] in db_review_ids:
                     pass
                     # review = {
@@ -413,15 +495,19 @@ def updateDBFromFeed(filename, geocode=True):
 
             # create the Categories
             for category in biz['categories']:
-                # if we it's new create it
-                if category['alias'] not in db_categories and category['alias'] not in unloaded_categories.keys():
-                    if xstr(category['alias']) == '' or xstr(category['alias']) == None: 
+                # if we it's new create it, provided we haven't already
+                if (category['alias'] not in db_categories 
+                and category['alias'] not in unloaded_categories.keys()):
+                    # some aliases are bad, so skip them
+                    if (xstr(category['alias']) == '' 
+                    or xstr(category['alias']) == None): 
                         print "BAD CATEGORY", xstr(category['alias'])
                         continue
                     cat = {'alias':xstr(category['alias']),
                             'title':xstr(category['title'])
                           }
                     unloaded_categories[category['alias']] = cat
+                # create the business association link
                 assoc = {
                          'business_id':biz['id'], 
                          'category_alias':category['alias']
@@ -429,6 +515,7 @@ def updateDBFromFeed(filename, geocode=True):
                 if (assoc['business_id'], assoc['category_alias']) not in db_biz_categories:
                     biz_cats.append(assoc)
 
+            # if we've reached batch size, perform the actual transactions
             if biz_count % upload_mod == 0:
                 with db.begin():
                     logger.info("Uploading Batch of %i to DB...." % upload_mod)
@@ -453,7 +540,7 @@ def updateDBFromFeed(filename, geocode=True):
                     biz_cats = [dict(tupleized) for tupleized in set(tuple(assoc.items()) for assoc in biz_cats)]
                     db.execute(business_category_table.insert(), biz_cats)
 
-                # reset the lists
+                # reset the lists for the next batch
                 db_categories.update(unloaded_categories.keys())
                 db_locations.update(unloaded_locations.keys())
                 unloaded_categories = {}
@@ -466,7 +553,7 @@ def updateDBFromFeed(filename, geocode=True):
                 update_documents = []
                 biz_cats = []
 
-    # upload the last
+    # upload the final batch
     bizlen = len(insert_businesses) + len(update_businesses)
     if bizlen > 0:
         with db.begin():
@@ -492,6 +579,9 @@ def updateDBFromFeed(filename, geocode=True):
             biz_cats = [dict(tupleized) for tupleized in set(tuple(assoc.items()) for assoc in biz_cats)]
             db.execute(business_category_table.insert(), biz_cats)
     
+    # if we are initializing the db, we need to reenable the fk constraints
+    # because we put in all the data correctly, we are sure the fks are correct
+    # this will error if they aren't
     if init_db:
         # put back all the constraints
         logger.info("Cheking Constraints...")
@@ -508,6 +598,12 @@ def updateDBFromFeed(filename, geocode=True):
     logger.info("Upserted %i businesses and %i total reviews in %d seconds = %.2f minutes" %\
                  (biz_num, review_count, total_time,  total_time/60.))
 
+    # update the download history
+    ydh.uploaded = True
+    with db.begin():
+        db.add(ydh)
+        
+
 
 def geocodeUnknownLocations(wait_time=2):
     """
@@ -521,7 +617,7 @@ def geocodeUnknownLocations(wait_time=2):
 
     """
     geoLocator = Nominatim()
-    # print geoLocator.geocode("548 riverside dr., NY, NY, 10027")
+    # print geoLocator.geocode("548 riverside dr., NY, NY, 10027") # test
     db = getDBSession()
     unknowns = db.query(Location).filter(Location.latitude==None).all()
     logger.info("%i Unkown locations to geocode" % len(unknowns))

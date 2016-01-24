@@ -1,8 +1,9 @@
 """
-The document model class, and its subclasses:
+Contains document models:
 
 1. YelpReview
 2. Tweet
+3. Document (an abstract associative table)
 
 """
 from datetime import datetime

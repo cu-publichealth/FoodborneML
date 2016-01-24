@@ -29,21 +29,28 @@ def dropdb(really):
 
 @main.command()
 def initdb():
-    """ Initialize database """
+    """ Initialize database schema
+
+    Notes: 
+        If you have added a new data model, this will only add the new table.
+        However, there are integrity errors that can occur if you edit an old table.
+        In general editing an old data model requires merging the new columns with default values, 
+        or reseting the table...
+    """
     models.setupDB()
 
 from pyhealth.sources import yelp_fast as Yelp
 @main.command()
 @click.option('-y', '--yelp', is_flag=True, help="update yelp")
-# @profile
+# @profile # needs to be uncommented to profile yelp_fast
 def download(yelp):
     """ download content from sources"""
     if yelp:
-        # fname = Yelp.downloadLatestYelpData()
-        # data = Yelp.unzipYelpFeed(fname)
-        # data = 'pyhealth/sources/yelpfiles/yelp_businesses.json'
-        # Yelp.updateDBFromFeed(data, geocode=False)
-        Yelp.geocodeUnknownLocations(wait_time=4)
+        fname = Yelp.downloadLatestYelpData()
+        data = Yelp.unzipYelpFeed(fname)
+        # data = 'pyhealth/sources/yelpfiles/yelp_businesses.json' # for testing w/o downloading
+        Yelp.updateDBFromFeed(data, geocode=False)
+        # Yelp.geocodeUnknownLocations(wait_time=4)
         
     return
 

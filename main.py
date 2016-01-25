@@ -56,7 +56,20 @@ def download(yelp):
 @main.command()
 @click.option('-w', '--wait', default=2, help="Number of seconds before timeout")
 def geocode(wait):
+    """ Take every location in DB without a (Lat, Lon) and attempt to reverse geocode them"""
     Yelp.geocodeUnknownLocations(wait_time=wait)
+
+
+#######################
+# DEPLOYMENT COMMANDS #
+#######################
+from pyhealth.deployment import yelp as DeployYelp
+@main.command()
+@click.option('-y', '--yelp', is_flag=True, help="Deploys continuous yelp system")
+def deploy(yelp):
+    """ Deploy various source components for continuous use by DOHMH """
+    if yelp:
+        DeployYelp.deploy()
 
 
 ##################################

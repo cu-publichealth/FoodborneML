@@ -41,3 +41,8 @@ This can be done one of a few ways (in order from most temporary to most permane
 **I'd suggest #3 because it'll save you time in the future**
 
 Happy experimenting!
+
+## Other things to note
+
+1. Please save all figures in the ```figures/``` directory (go figure! hehe)
+2. Please keep all data files (```.xls, .xlsx, .json, .csv, .numbers, .etc```) in the ```data/``` directory

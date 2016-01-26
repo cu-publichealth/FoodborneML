@@ -13,10 +13,11 @@ def download():
     data = Yelp.unzipYelpFeed(fname)
     Yelp.updateDBFromFeed(data, geocode=False)
 
-from ..settings import geocode_wait_time
+from ..settings import geocode_config
 def geocode():
     """ try to geocode unknown locations """
-    Yelp.geocodeUnknownLocations(wait_time=geocode_wait_time)
+    Yelp.geocodeUnknownLocations(wait_time=geocode_config['wait_time'],
+                                 runt_time=geocode_config['run_time'])
 
 
 def deploy():

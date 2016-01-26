@@ -55,9 +55,10 @@ def download(yelp):
 
 @main.command()
 @click.option('-w', '--wait', default=2, help="Number of seconds before timeout")
-def geocode(wait):
+@click.option('-t', '--time', default=240, help="Maximum amount of time to run geocode in minutes")
+def geocode(wait, time):
     """ Take every location in DB without a (Lat, Lon) and attempt to reverse geocode them"""
-    Yelp.geocodeUnknownLocations(wait_time=wait)
+    Yelp.geocodeUnknownLocations(wait_time=wait, run_time=time)
 
 
 #######################

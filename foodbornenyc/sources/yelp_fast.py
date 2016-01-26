@@ -603,10 +603,15 @@ def updateDBFromFeed(filename, geocode=True):
     
         
 
+from random import shuffle # to shuffle list in place
 
-def geocodeUnknownLocations(wait_time=2):
+def geocodeUnknownLocations(wait_time=2, run_time=240):
     """
     Geocode any locations that don't have Lat/Lons
+
+    Only do so for up to `run_time` minutes, because this can take a very long time if most are unknown
+
+    Also shuffle so that they all get equal probability of being tried
 
     Args:
         wait_time: how long to wait until timeout
@@ -619,10 +624,22 @@ def geocodeUnknownLocations(wait_time=2):
     # print geoLocator.geocode("548 riverside dr., NY, NY, 10027") # test
     db = getDBSession()
     unknowns = db.query(Location).filter(Location.latitude==None).all()
+    shuffle(unknowns) # give them all a fighting chance
+    logger.info("Attempting to geocode random unknown locations for %i minutes" % run_time)
     logger.info("%i Unkown locations to geocode" % len(unknowns))
     locations = []
-    upload_mod = 100
+    upload_mod = 100 # upload batch size
+
+    start_time = time.time()
+    run_time *= 60 # turn it into seconds
+
     for i, location in enumerate(unknowns):
+        # max try time stopping criterion
+        if (time.time() - start_time) > run_time:
+            logger.info("Max geocoding time has elapsed... Stopping for this run")
+            db.add_all(locations)
+            db.commit()
+            break
         # print location.street_address
         logger.info("Geocoding location %i..." % i)
         try:
@@ -631,7 +648,7 @@ def geocodeUnknownLocations(wait_time=2):
             lon = geo.longitude
             logger.info("\tSuccess!")
         except Exception as e:
-            print "Exception: ", e
+            # print  "Exception: ", e
             logger.warning("\tGeocode failed, assigning NULL Lat/Long")
             lat = None
             lon = None

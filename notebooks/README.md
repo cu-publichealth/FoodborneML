@@ -24,6 +24,7 @@ sys.path.append('/full/path/to/wherever/you/have/foodbornenyc/installed')
 
 import foodbornenyc
 ```
+
 2. During a terminal session you can set the environment variable for just that session:
 ```bash
 (yourenv)$ export PYTHONPATH=$PYTHONPATH:/full/path/to/wherever/you/have/foodbornenyc/installed

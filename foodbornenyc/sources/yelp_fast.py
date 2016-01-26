@@ -69,7 +69,8 @@ def downloadURLToFile(url, data_dir, filename):
             handle.write(block)
             handle.flush()
             count +=1
-
+    print # gets rid of final carriage return
+    
 import botocore.session
 def downloadLatestYelpData():
     """
@@ -87,12 +88,12 @@ def downloadLatestYelpData():
     """
     # first make sure we haven't already downloaded the file
     db = getDBSession()
-    ydh = db.query(YelpDownloadHistory).first()
+    ydh = db.query(YelpDownloadHistory).filter(YelpDownloadHistory.date==date.today()).scalar()
 
     # if it doesn't exist or it's old, create the new one
-    print "YDH", ydh
     if not ydh or not ydh.date == date.today():
         ydh = YelpDownloadHistory()
+        logger.info("Creating new download history for today")
 
     # if we already downloaded, log and return
     if ydh.downloaded:
@@ -139,7 +140,6 @@ def downloadLatestYelpData():
 
     logger.info("Latest Yelp Data successfully downloaded from feed.")
     ydh.downloaded = True
-    db.add(ydh)
     db.commit()
     local_file = config['rawdata_dir'] + config['local_file']
     return local_file
@@ -150,7 +150,7 @@ def unzipYelpFeed(filename):
     """
     # first make sure we haven't already unzipped it
     db = getDBSession()
-    ydh = db.query(YelpDownloadHistory).first()
+    ydh = db.query(YelpDownloadHistory).filter(YelpDownloadHistory.date==date.today()).scalar()
 
     # if it doesn't exist, error out because we need to download it
     if not ydh or not ydh.date == date.today() or not ydh.downloaded:
@@ -174,7 +174,6 @@ def unzipYelpFeed(filename):
                 i += 1
     logger.info("Done extracting file: %s" % rawfile)
     ydh.unzipped = True
-    db.add(ydh)
     db.commit()
     return rawfile
 
@@ -253,7 +252,7 @@ def updateDBFromFeed(filename, geocode=True):
     db = getDBSession(echo=False, autoflush=False, autocommit=True)
 
     # check YelpDownloadHistory to see if we've already uploaded the feed
-    ydh = db.query(YelpDownloadHistory).first()
+    ydh = db.query(YelpDownloadHistory).filter(YelpDownloadHistory.date==date.today()).scalar()
 
     # if it doesn't exist, isnt today, hasn't been downloaded or unzipped
     if not ydh or not ydh.date == date.today() or not ydh.downloaded or not ydh.unzipped:
@@ -358,9 +357,9 @@ def updateDBFromFeed(filename, geocode=True):
             # (only works when we aren't initializing the db)
             if most_recent and not init_db:
                 if bdate <= most_recent:
-                    print "SKIPPING (NOT NEW): %s" % biz['name']
+                    logger.info("SKIPPING (NOT NEW): %s" % biz['name'])
                     biz_count -=1
-                    print biz_count
+                    # print biz_count
                     continue
 
             # create the Location object
@@ -501,7 +500,7 @@ def updateDBFromFeed(filename, geocode=True):
                     # some aliases are bad, so skip them
                     if (xstr(category['alias']) == '' 
                     or xstr(category['alias']) == None): 
-                        print "BAD CATEGORY", xstr(category['alias'])
+                        logger.warning("BAD CATEGORY %r... Skipping" % xstr(category['alias']))
                         continue
                     cat = {'alias':xstr(category['alias']),
                             'title':xstr(category['title'])
@@ -599,9 +598,9 @@ def updateDBFromFeed(filename, geocode=True):
                  (biz_num, review_count, total_time,  total_time/60.))
 
     # update the download history
-    ydh.uploaded = True
     with db.begin():
-        db.add(ydh)
+        ydh.uploaded = True
+    
         
 
 
@@ -624,7 +623,7 @@ def geocodeUnknownLocations(wait_time=2):
     locations = []
     upload_mod = 100
     for i, location in enumerate(unknowns):
-        print location.street_address
+        # print location.street_address
         logger.info("Geocoding location %i..." % i)
         try:
             geo = geoLocator.geocode(location.street_address, timeout=wait_time)

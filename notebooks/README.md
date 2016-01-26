@@ -17,22 +17,26 @@ iPython uses this variable to look for other directories that contain packages w
 This can be done one of a few ways (in order from most temporary to most permanent):
 
 1. Within a notebook you can use:
-```python
-import sys
-sys.path.append('/full/path/to/wherever/you/have/foodbornenyc/installed')
-# example: '/Users/thomaseffland/Development/FoodborneNYC'
 
-import foodbornenyc
-```
+	```python
+	import sys
+	sys.path.append('/full/path/to/wherever/you/have/foodbornenyc/installed')
+	# example: '/Users/thomaseffland/Development/FoodborneNYC'
+
+	import foodbornenyc
+	```
 
 2. During a terminal session you can set the environment variable for just that session:
-```bash
-(yourenv)$ export PYTHONPATH=$PYTHONPATH:/full/path/to/wherever/you/have/foodbornenyc/installed
-```
+
+	```bash
+	(yourenv)$ export PYTHONPATH=$PYTHONPATH:/full/path/to/wherever/you/have/foodbornenyc/installed
+	```
 
 3. Set it up permamently by including it in your ```~/.bashrc``` (for linux) or ```~/.bash_profile``` (for osx) (I'm not sure about windows):
-```bash
-export PYTHONPATH=/full/path/to/wherever/you/have/foodbornenyc/installed
+
+	```bash
+	export PYTHONPATH=/full/path/to/wherever/you/have/foodbornenyc/installed
+	```
 
 **I'd suggest #3 because it'll save you time in the future**
 

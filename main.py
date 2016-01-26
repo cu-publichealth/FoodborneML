@@ -16,7 +16,7 @@ def main():
 """ Add commands to the main group here"""
 
 # model and database related
-import pyhealth.models.models as models
+import foodbornenyc.models.models as models
 @main.command()
 @click.argument('really')
 def dropdb(really):
@@ -39,7 +39,7 @@ def initdb():
     """
     models.setupDB()
 
-from pyhealth.sources import yelp_fast as Yelp
+from foodbornenyc.sources import yelp_fast as Yelp
 @main.command()
 @click.option('-y', '--yelp', is_flag=True, help="update yelp")
 # @profile # needs to be uncommented to profile yelp_fast
@@ -48,7 +48,7 @@ def download(yelp):
     if yelp:
         fname = Yelp.downloadLatestYelpData()
         data = Yelp.unzipYelpFeed(fname)
-        # data = 'pyhealth/sources/yelpfiles/yelp_businesses.json' # for testing w/o downloading
+        # data = 'foodbornenyc/sources/yelpfiles/yelp_businesses.json' # for testing w/o downloading
         Yelp.updateDBFromFeed(data, geocode=False)
         
     return
@@ -63,7 +63,7 @@ def geocode(wait):
 #######################
 # DEPLOYMENT COMMANDS #
 #######################
-from pyhealth.deployment import yelp as DeployYelp
+from foodbornenyc.deployment import yelp as DeployYelp
 @main.command()
 @click.option('-y', '--yelp', is_flag=True, help="Deploys continuous yelp system")
 def deploy(yelp):
@@ -80,6 +80,6 @@ if __name__ == "__main__":
 
 
 ### SIMPLE PYTHON EXPERIMENT ###
-#from pyhealth.experiments.simpletwitterclassify import run
+#from foodbornenyc.experiments.simpletwitterclassify import run
 #run()
 

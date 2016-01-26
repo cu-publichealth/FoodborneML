@@ -44,5 +44,5 @@ Happy experimenting!
 
 ## Other things to note
 
-1. Please save all figures in the ```figures/``` directory (go figure! hehe)
-2. Please keep all data files (```.xls, .xlsx, .json, .csv, .numbers, .etc```) in the ```data/``` directory
+1. Please save all figures in the `figures/` directory (go figure! hehe)
+2. Please keep all data files (`.xls, .xlsx, .json, .csv, .numbers, .etc`) in the `data/` directory

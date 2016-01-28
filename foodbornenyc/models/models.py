@@ -63,6 +63,7 @@ def setupDB():
         traceback.print_exc()
 
 def dropAllTables():
+    print "BLAH"
     engine = getDBEngine(echo=True)
     # drop the schema
     try:

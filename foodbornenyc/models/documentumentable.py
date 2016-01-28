@@ -1,4 +1,7 @@
 """
+DEPRECATED!!!!!!!!
+
+
 The document model class, and its subclasses:
 
 1. YelpReview
@@ -18,7 +21,7 @@ from models import metadata
 """ Define sublasses and tables here"""
 yelp_reviews = Table('yelp_reviews', metadata,
     Column('yelp_id', String(255), primary_key=True),
-    Column('doc_id', None, ForeignKey('documents.doc_id'), nullable=False),
+    Column('doc_id', None, ForeignKey('documents.doc_id', deferrable=True), nullable=False),
     Column('text', UnicodeText),
     Column('rating', Float),
     Column('user_name', String(255)),    

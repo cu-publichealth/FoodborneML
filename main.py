@@ -8,6 +8,9 @@ The commandline entrypoint into the package
 
 """
 import click
+from foodbornenyc.util.util import getLogger
+
+logger = getLogger(__name__)
 
 @click.group()
 def main():
@@ -25,7 +28,7 @@ def dropdb(really):
     if really.lower() == "yes" or really.lower()=="y":
         models.dropAllTables()
     else:
-        "Failed to drop because you weren't sure"
+        logger.warning("Failed to drop because you weren't sure")
 
 @main.command()
 def initdb():

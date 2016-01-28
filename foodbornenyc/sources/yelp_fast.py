@@ -93,6 +93,8 @@ def downloadLatestYelpData():
     # if it doesn't exist or it's old, create the new one
     if not ydh or not ydh.date == date.today():
         ydh = YelpDownloadHistory()
+        db.add(ydh)
+        db.commit()
         logger.info("Creating new download history for today")
 
     # if we already downloaded, log and return
@@ -207,7 +209,7 @@ from json import loads
 from ..models.businesses import Business, YelpCategory
 from ..models.businesses import businesses, categories, business_category_table
 from ..models.locations import Location, locations
-from ..models.documents import YelpReview, Document, yelp_reviews, documents
+from ..models.documents import YelpReview, Document, yelp_reviews, documents, document_associations
 import sqlalchemy
 from sqlalchemy import desc
 
@@ -308,7 +310,7 @@ def updateDBFromFeed(filename, geocode=True):
         db_biz_ids = set([ b.id 
                         for b in db.query(Business.id).all() ])
         db_review_ids = set([ r.yelp_id 
-                            for r in db.query(YelpReview.yelp_id).all() ])
+                            for r in db.query(YelpReview.id).all() ])
         db_locations = set([ l.street_address 
                             for l in db.query(Location.street_address).all() ])
         db_categories = set([ c.alias 
@@ -322,6 +324,7 @@ def updateDBFromFeed(filename, geocode=True):
     insert_businesses = []
     insert_reviews = []
     insert_documents = []
+    insert_doc_associations = []
     update_businesses = []
     update_reviews = []
     update_documents = []
@@ -475,21 +478,44 @@ def updateDBFromFeed(filename, geocode=True):
                     # update_documents.append(document)
                 # else create a new one
                 else:
+                    # reviw = YelpReview(
+                                # yelp_id=)
                     review = {
                             'business_id':biz['id'],
                             'text' : unicode(rev['text']),
                             'rating':rev['rating'],
                             'user_name':rev['user']['name'],
                             'created':rev['created'],
-                            'yelp_id':rev['id'],
+                            'id':rev['id'],
+                            # 'doc_id':rev['id'],
+                            'doc_assoc_id':rev['id'],
                             'updated_at':datetime.now()
                             }
                     document = {
                             'id':rev['id'],
-                            'type':yelp_reviews.name
+                            'assoc_id':rev['id'],
+                            # 'type':yelp_reviews.name,
+                            'created':datetime.now(),
+                            'fp_label':None,
+                            'mult_label':None,
+                            'inc_label':None,
+                            'fp_pred':None,
+                            'mul_pred':None,
+                            'inc_pred':None,
+                            'fp_label_time':None,
+                            'mult_label_time':None,
+                            'inc_label_time':None,
+                            'fp_pred_time':None,
+                            'mul_pred_time':None,
+                            'inc_pred_time':None
+                    }
+                    doc_assoc = {
+                        'assoc_id':rev['id'],
+                        'type':yelp_reviews.name
                     }
                     insert_reviews.append(review)
                     insert_documents.append(document)
+                    insert_doc_associations.append(doc_assoc)
             review_count += len(biz['reviews'])
 
             # create the Categories
@@ -527,12 +553,13 @@ def updateDBFromFeed(filename, geocode=True):
                     db.execute(businesses.insert(), insert_businesses)
                     db.bulk_update_mappings(Business, update_businesses)
                     revlen = len(insert_reviews) + len(update_reviews)
-                    logger.info("Uploading %i Business Reviews to DB...." % revlen)
-                    db.execute(yelp_reviews.insert(), sorted(insert_reviews, key=lambda x:x['yelp_id']))
-                    db.bulk_update_mappings(YelpReview, update_reviews)
                     logger.info("Uploading %i Documents to DB...." % revlen)
+                    db.execute(document_associations.insert(), sorted(insert_doc_associations, key=lambda x:x['assoc_id']))
                     db.execute(documents.insert(), sorted(insert_documents, key=lambda x:x['id']))
-                    db.bulk_update_mappings(Document, update_documents)
+                    # db.bulk_update_mappings(Document, update_documents)
+                    logger.info("Uploading %i Business Reviews to DB...." % revlen)
+                    db.execute(yelp_reviews.insert(), sorted(insert_reviews, key=lambda x:x['id']))
+                    # db.bulk_update_mappings(YelpReview, update_reviews)
                     #there seem to be duplicate categories for a business
                     #so make the associations unique
                     logger.info("Uploading Business Category associations to DB....")
@@ -547,6 +574,7 @@ def updateDBFromFeed(filename, geocode=True):
                 insert_businesses = []
                 insert_reviews = []
                 insert_documents = []
+                insert_doc_associations = []
                 update_businesses = []
                 update_reviews = []
                 update_documents = []
@@ -566,12 +594,13 @@ def updateDBFromFeed(filename, geocode=True):
             db.execute(businesses.insert(), insert_businesses)
             db.bulk_update_mappings(Business, update_businesses)
             revlen = len(insert_reviews) + len(update_reviews)
-            logger.info("Uploading %i Business Reviews to DB...." % revlen)
-            db.execute(yelp_reviews.insert(), sorted(insert_reviews, key=lambda x:x['yelp_id']))
-            db.bulk_update_mappings(YelpReview, update_reviews)
             logger.info("Uploading %i Documents to DB...." % revlen)
+            db.execute(document_associations.insert(), sorted(insert_doc_associations, key=lambda x:x['assoc_id']))
             db.execute(documents.insert(), sorted(insert_documents, key=lambda x:x['id']))
-            db.bulk_update_mappings(Document, update_documents)
+            # db.bulk_update_mappings(Document, update_documents)
+            logger.info("Uploading %i Business Reviews to DB...." % revlen)
+            db.execute(yelp_reviews.insert(), sorted(insert_reviews, key=lambda x:x['id']))
+            # db.bulk_update_mappings(YelpReview, update_reviews)
             #there seem to be duplicate categories for a business
             #so make the associations unique
             logger.info("Uploading Business Category associations to DB....")

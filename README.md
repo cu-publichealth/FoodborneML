@@ -22,6 +22,18 @@ Currently it's just research code.
 - We will be following git team best practices(links to come).  This means branching, merging, rebasing 
    - Before merging a branch, **document what you have!**
 
+- We will be following Hitchhikers guide to python closely
+- We will be using Jenkinz for continuous integration (or emaybe TravisCI)
+- We will be writing unit tests using `pytests`
+- We will be using pylint to help with code reviews  (automated code analysis)
+- We must make sure every dependency is licensed in a compatible way
+- We must choose our LICENSE and create a license.txt file
+
+- A useful reference [Writing idomatic python](https://www.jeffknupp.com/writing-idiomatic-python-ebook/)
+
+- Oooh this looks very helpful [guide to open sourcing a python project](https://www.jeffknupp.com/blog/2013/08/16/open-sourcing-a-python-project-the-right-way/)
+
+
 
 ### TODO
 

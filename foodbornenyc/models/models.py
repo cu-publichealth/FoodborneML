@@ -37,9 +37,14 @@ def getDBEngine(echo=False, verbose=False):
     user = config['user']
     password = config['password']
     db_host = config['dbhost']
+    db_backend = config['dbbackend']
 
-    engine = create_engine('mssql+pymssql://%s:%s@%s?charset=utf8'\
-        % (user, password, db_host), echo=echo )
+    if 'sqlite' in db_backend:
+        engine = (create_engine('%s:///%s'
+            % (db_backend, db_host), echo=echo ))
+    else:
+        engine = (create_engine('%s://%s:%s@%s?charset=utf8'
+            % (db_backend, user, password, db_host), echo=echo ))
 
     if verbose:
         logger.info("Engine created for %s::%s" % (db_host, user))

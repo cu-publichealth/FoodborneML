@@ -15,6 +15,7 @@ from ..util.util import getLogger, xstr, xuni
 logger = getLogger(__name__)
 
 from ..settings import yelp_download_config as config
+from ..settings import database_config as dbconfig
 
 from ..models.models import getDBSession
 from ..models.download_history import YelpDownloadHistory
@@ -289,7 +290,7 @@ def updateDBFromFeed(filename, geocode=True):
 
     # if we're initializing the db, disable the foreign key constraints
     # this will improve upload speeds
-    if init_db:
+    if init_db and 'mssql' in dbconfig['dbbackend']:
         disable_fk = """
         ALTER TABLE dbo.%s NOCHECK CONSTRAINT fk_loc;
         ALTER TABLE dbo.%s NOCHECK CONSTRAINT fk_biz_id;
@@ -610,7 +611,7 @@ def updateDBFromFeed(filename, geocode=True):
     # if we are initializing the db, we need to reenable the fk constraints
     # because we put in all the data correctly, we are sure the fks are correct
     # this will error if they aren't
-    if init_db:
+    if init_db and 'mssql' in dbconfig['dbbackend']:
         # put back all the constraints
         logger.info("Cheking Constraints...")
         enable_fk = """

@@ -3,10 +3,11 @@ Global Settings
 """
 
 database_config = {
-    'user': 'johnnybananas',
-    'password': 'abc123',
-    'dbhost': 'toy.db'
-    'dbbackend':'sqlite3'
+    # change these according to your own database setup
+    #'user': 'johnnybananas', # only needed for real RDBMS
+    #'password': 'abc123', # only needed for real RDBMS
+    'dbhost': 'toy.db',
+    'dbbackend':'sqlite'
 }
 
 yelp_download_config = {

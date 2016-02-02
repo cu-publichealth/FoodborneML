@@ -56,6 +56,8 @@ This install guide is currently just intended for Mac OSX in the Terminal. Note 
 
 10. Congratulations! You now have FoodborneNYC installed. You can start messing with the code. Check out the command line options with `python main.py --help`
 
+11. To start using the data collection sources initialize your database schema with `python main.py initdb`
+
 
 
 ## For Developers of the code

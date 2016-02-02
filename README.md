@@ -58,6 +58,8 @@ This install guide is currently just intended for Mac OSX in the Terminal. Note 
 
 11. To start using the data collection sources initialize your database schema with `python main.py initdb`
 
+**NOTE:** Due to the volume of data (even just from Yelp), it is highly recommended that you use a real DBMS instead of the preconfigured sqlite.  SQlite is an in memory database and you are likely to have performance issues. Currently the system has only been tested for MSSQL Server, but SQLAlchemy does support many backends.  For further info look [here](http://docs.sqlalchemy.org/en/latest/dialects/). 
+
 
 
 ## For Developers of the code

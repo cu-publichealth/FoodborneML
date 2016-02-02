@@ -3,9 +3,10 @@ Global Settings
 """
 
 database_config = {
-    'user': '<yourdbname>',
-    'password': '<yourdbpassword>',
-    'dbhost': '<yourdbhost>'
+    'user': 'johnnybananas',
+    'password': 'abc123',
+    'dbhost': 'toy.db'
+    'dbbackend':'sqlite3'
 }
 
 yelp_download_config = {

@@ -44,6 +44,11 @@ This install guide is currently just intended for Mac OSX in the Terminal. Note 
     ```
 
     Note that in the future you'll need to activate the environment with `workon fbnyc` or deactivate it with `deactivate fbnyc`
+    
+    You'll know that you're in a virtual environment because your command prompt will be prefixed with the environment name, eg.:
+    ```bash
+    (fbnyc) FoodborneNYC thomaseffland$
+    ```
 
 7. Install `git` if you don't have it already with `brew install git`
 

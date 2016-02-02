@@ -60,7 +60,6 @@ ptyprocess==0.5
 pyOpenSSL==0.15.1
 pyasn1==0.1.8
 pycparser==2.14
-pyhealth==0.1
 pymssql==2.1.1
 pyodbc==2.1.0-unsupported
 pyparsing==2.0.3

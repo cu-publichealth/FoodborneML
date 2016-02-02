@@ -3,7 +3,7 @@ python:
   - "2.7"
 
 # command to install dependencies
-install: "pip install --user -r deploy_requirements.txt"
+install: "pip install -r deploy_requirements.txt"
 
 # command to run tests
 # script: 

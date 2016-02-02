@@ -49,6 +49,7 @@ pexpect==4.0.1
 pickleshare==0.5
 Pillow==3.0.0
 ptyprocess==0.5
+py==1.4.31
 Pygments==2.0.2
 pyhealth==0.1
 pylab==0.1.3
@@ -56,6 +57,7 @@ pylint==1.5.4
 pymssql==2.1.1
 pyparsing==2.0.6
 pystan==2.8.0.2
+pytest==2.8.7
 python-dateutil==2.4.2
 pytz==2015.7
 pyzmq==15.0.0

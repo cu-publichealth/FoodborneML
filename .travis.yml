@@ -1,0 +1,21 @@
+language: python
+python:
+  - "2.7"
+
+# command to install dependencies
+install: "pip install --user -r deploy_requirements.txt"
+
+# command to run tests
+# script: 
+
+# command to notify after failed build
+# after_failure:
+
+# command to only build on these branches (the build whitelist)
+branches:
+  only:
+    - master
+
+# command to specify branches to not build (the build blacklist)
+# branches:
+  # except:

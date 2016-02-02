@@ -14,14 +14,19 @@ Currently it's just research code.
 This install guide is currently just intended for Mac OSX in the Terminal. Note that `< >` encloses things you will need to fill in yourself
 
 1. Setup a directory for your project eg, `mkdir <~/mydevdir/FoodborneNYC>`
+
 2. Make sure you have XCode Commandline tools installed, test this with `gcc` or `make`. If you get a prompt, follow it.
+
 3. If you don't have it, install Homebrew:
 
     ```bash
     $ ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
     ```
+
 4. Properly install python with `brew install python`
+
 5. Now you have `pip`. Next install virtualenv and virtualenvwrapper with `pip install virtualenvwrapper`
+
 6. Add the following lines to your `~/.bash_profile`:
 
     ```bash
@@ -42,12 +47,14 @@ This install guide is currently just intended for Mac OSX in the Terminal. Note 
     Note that in the future you'll need to activate the environment with `workon fbnyc` or deactivate it with `deactivate fbnyc`
 
 8. Install `git` if you don't have it already with `brew install git`
+
 9. Clone the repository from github with `https://github.com/teffland/FoodborneNYC.git`
+
 10. Install all of the python dependencies
 
     - If you just want to run the tool as is then use `pip install --user -r deploy_requirements.txt`
     - If you want to develop the code, use `pip install --user -r requirements.txt`
-    
+
 11. Congratulations! You now have FoodborneNYC installed. You can start messing with the code. Check out the command line options with `python main.py --help`
 
 

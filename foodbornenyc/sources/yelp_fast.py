@@ -434,7 +434,7 @@ def updateDBFromFeed(filename, geocode=True):
                         'rating':biz['rating'],
                         'url':biz['url'],
                         'business_url':biz['business_url'],
-                        'last_updated':biz['time_updated'],
+                        'last_updated':datetime.strptime(biz['time_updated'], "%Y-%m-%dT%H:%M:%S"),
                         'is_closed':is_closed,
                         'location_address':street_address,
                         'updated_at':datetime.now()
@@ -449,7 +449,7 @@ def updateDBFromFeed(filename, geocode=True):
                         'rating':biz['rating'],
                         'url':biz['url'],
                         'business_url':biz['business_url'],
-                        'last_updated':biz['time_updated'],
+                        'last_updated':datetime.strptime(biz['time_updated'], "%Y-%m-%dT%H:%M:%S"),
                         'is_closed':is_closed,
                         'location_address':street_address,
                         'updated_at':datetime.now()
@@ -486,7 +486,7 @@ def updateDBFromFeed(filename, geocode=True):
                             'text' : unicode(rev['text']),
                             'rating':rev['rating'],
                             'user_name':rev['user']['name'],
-                            'created':rev['created'],
+                            'created':datetime.strptime(rev['created'], '%Y-%m-%d'),
                             'id':rev['id'],
                             # 'doc_id':rev['id'],
                             'doc_assoc_id':rev['id'],

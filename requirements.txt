@@ -30,7 +30,7 @@ ipykernel==4.0.3
 ipython==4.0.0
 ipython-genutils==0.1.0
 ipywidgets==4.0.3
-jdcal==1.0
+jdcal==1.2
 jmespath==0.9.0
 jsonschema==2.5.1
 jupyter==1.0.0

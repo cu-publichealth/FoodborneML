@@ -13,6 +13,13 @@ def download():
     data = Yelp.unzipYelpFeed(fname)
     Yelp.updateDBFromFeed(data, geocode=False)
 
+from ..methods import yelp_classify
+from..settings import yelp_classify_config
+def classify():
+    clf = yelp_classify.YelpClassify()
+    clf.classify_reviews(since=yelp_classify_config['days_back'],
+                         verbose=yelp_classify_config['verbosity'])
+
 from ..settings import geocode_config
 def geocode():
     """ try to geocode unknown locations """
@@ -22,7 +29,8 @@ def geocode():
 
 def deploy():
     # define workload schedule
-    schedule.every().day.at("8:0").do(download) # download at 8AM
+    schedule.every().day.at("8:00").do(download) # download at 8AM
+    schedule.every().day.at("8:30").do(classify) # classify new at 9AM
     schedule.every().day.at("23:00").do(geocode) # Geocode at 11PM
 
     # run the continuous program

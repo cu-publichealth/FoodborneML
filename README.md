@@ -4,8 +4,6 @@ The new implementation of a system to mine social media documents for evidence o
 
 This software will be used by the NYC Department of Health and Mental Hygiene (DOHMH) to inform their practices.
 
-It is intended to eventually serve as boilerplate for other municipal agencies wishing to leverage social media for actionable inference in practice.
-
 Currently it's just research code.
 
 ## For Readers of the code / those just looking over the project
@@ -16,39 +14,18 @@ Currently it's just research code.
 
 ### Best Practice References
 
-- We will be following (as closely as possible) the style guide for python specified in [PEP #0008](https://www.python.org/dev/peps/pep-0008/)
-- We will be using [Sphinx](http://www.sphinx-doc.org/en/stable/) to autogenerate documentation from the code.
-    - It will be available on ReadTheDocs (link to come)
-- We will be following git team best practices(links to come).  This means branching, merging, rebasing 
-   - Before merging a branch, **document what you have!**
+- Follow [PEP #0008](https://www.python.org/dev/peps/pep-0008/) for style and documentation guidance
+- When developing features, use the [Github Flow](https://guides.github.com/introduction/flow/index.html). It's lightweight and conceptually simple but will encapsulate all of your work
+    1. Basically each feature you develop will be on it's own, explicitly-named branch.
+    2. Commit within your own branch often
+    3. When you're ready to merge it with `master`, issue a pull request
+    4. We will code review your changes and make sure it passes all testing
+- We'll use TravisCI for continuous integration on pull requests.  This saves us a lot of work. See [this](http://stackoverflow.com/questions/32422264/jenkins-vs-travis-ci) for an explanation
+- Write your unit tests with `pytests`
+- Use `pylint` for some helpful automated code review
+- Eventually, we'll use [Sphinx](http://www.sphinx-doc.org/en/stable/) and [ReadTheDocs](https://readthedocs.org/) for automated documentation
 
-- We will be following Hitchhikers guide to python closely
-- We will be using Jenkinz for continuous integration (or emaybe TravisCI)
-- We will be writing unit tests using `pytests`
-- We will be using pylint to help with code reviews  (automated code analysis)
-- We must make sure every dependency is licensed in a compatible way
-- We must choose our LICENSE and create a license.txt file
+#### Some useful references
 
-- A useful reference [Writing idomatic python](https://www.jeffknupp.com/writing-idiomatic-python-ebook/)
-
-- Oooh this looks very helpful [guide to open sourcing a python project](https://www.jeffknupp.com/blog/2013/08/16/open-sourcing-a-python-project-the-right-way/)
-
-
-
-### TODO
-
-A high level list of todo's can be kept here.
-
-1. Twitter streaming and search
-    - Tweet data model for DB
-    - API limit handling
-    - Robust error handling
-    - Tracking conversations
-2. User Interface
-    - Probably a simple flask server with access to the DB through the ```models```
-    - For use by DOHMH so we can better present results and collect the data in a way that works best for the system and classification models.
-3. Integration Services and Unit Testing
-4. Documentation (always, always, always)
-5. Improve document level classification (always, always, always)
-6. 
-
+- A [useful reference](https://www.jeffknupp.com/writing-idiomatic-python-ebook/) for many things python. Specifically on how to write "pythonic" (idiomatic python) code 
+- A great resource on python best practices continually updated by python experts: [Hitchhiker's Guide to Python](http://docs.python-guide.org/en/latest/)

@@ -21,12 +21,12 @@ from ..util.util import getLogger
 logger = getLogger(__name__)
 
 # metadata object shared between models
-from sqlalchemy import MetaData
+from sqlalchemy import MetaData, func
 metadata = MetaData()
 # import each of the used model definition files
 import locations
-import documents
 import businesses
+import documents
 import download_history
 
 from ..settings import database_config as config
@@ -74,4 +74,15 @@ def dropAllTables():
         logger.error("Failed to drop all tables")
         traceback.print_exc()
 
-
+def page_query(query, yield_per):
+    """Do the same thing as yield_per with eager loading.
+    Inspired by http://stackoverflow.com/questions/1145905/sqlalchemy-scan-huge-tables-using-orm"""
+    offset = 0
+    while True:
+        returned = False
+        for elem in query.limit(yield_per).offset(offset):
+            returned = True
+            yield elem
+        offset += yield_per
+        if not returned:
+            break

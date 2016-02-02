@@ -56,6 +56,15 @@ def download(yelp):
         
     return
 
+from foodbornenyc.methods import yelp_classify
+@main.command()
+@click.option('-s', '--since', default=7, help="Number of days in past to classify")
+@click.option('-a', '--all', default=False, is_flag=True, help="Whether to do just classify all reviews.  Overrides --since")
+@click.option('-v', '--verbose', default=1, help="Specify the verbosity level")
+def classify_yelp(since, all, verbose):
+    classifier = yelp_classify.YelpClassify()
+    classifier.classify_reviews(all=all, since=since, verbose=verbose)
+
 @main.command()
 @click.option('-w', '--wait', default=2, help="Number of seconds before timeout")
 @click.option('-t', '--time', default=240, help="Maximum amount of time to run geocode in minutes")

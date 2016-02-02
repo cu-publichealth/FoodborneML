@@ -54,7 +54,7 @@ def documentable(cls, name):
     """documentable 'interface'."""
     mapper = class_mapper(cls)
     table = mapper.local_table
-    mapper.add_property('document_rel', relation(DocumentAssoc, backref=backref('_backref_%s' % table.name, uselist=False)))
+    mapper.add_property('document_rel', relation(DocumentAssoc, backref=backref('_backref_%s' % table.name, uselist=False), lazy="joined"))
 
     # scalar based property decorator
     def get(self):
@@ -98,45 +98,78 @@ class Document(object):
     def __repr__(self):
         return "<Document: %r>" % self.id
 
-    def set(self, var_name, var_val):
-        """Generic set method for private variables using introspection
-        - Currently assumes the variables are boolean (since all are in class definition)
+    def empty_setter(self, varname, varval):
+        setattr(self, varname, varval)
+        
+    def datetime_setter(self, varname, varval):
+        self.empty_setter(varname, varval)
+        # also do the time
+        vartime = varname + '_time'
+        setattr(self, vartime, datetime.now())
+    
+    def empty_getter(self, varname):
+        return getattr(self, varname)
+        
+    def getset(varname, getter, setter):
+        """ Take arbitrary private var name, getter and setter functions and apply them to varname"""
+        return property(lambda self: getter(self, varname),
+                        lambda self, varval: setter(self, varname, varval))
 
-        Args:
-            var_name (str): The name of the private variable to be set, not including the underscore prefix
+    # make property wrapped public variables for both the labels, predictions and times
+    fp_label = getset( "__fp_label", empty_getter, datetime_setter )
+    mult_label = getset( "__mult_label", empty_getter, datetime_setter )
+    inc_label = getset( "__inc_label", empty_getter, datetime_setter )
+    fp_pred = getset( "__fp_pred", empty_getter, datetime_setter )
+    mult_pred = getset( "__mult_pred", empty_getter, datetime_setter )
+    inc_pred = getset( "__inc_pred", empty_getter, datetime_setter )
+    # times have trivial wrappers for now
+    fp_label_time = getset("_fp_label_time", empty_getter, empty_setter)
+    fp_label_time = getset( "__fp_label_time", empty_getter, empty_setter )
+    mult_label_time = getset( "__mult_label_time", empty_getter, empty_setter )
+    inc_label_time = getset( "__inc_label_time", empty_getter, empty_setter )
+    fp_pred_time = getset( "__fp_pred_time", empty_getter, empty_setter )
+    mult_pred_time = getset( "__mult_pred_time", empty_getter, empty_setter )
+    inc_pred_time = getset( "__inc_pred_time", empty_getter, empty_setter )
 
-            var_val (bool): The value to set `self.__var_name` to.  Can be `None`
+    # def set(self, var_name, var_val):
+    #     """Generic set method for private variables using introspection
+    #     - Currently assumes the variables are boolean (since all are in class definition)
 
-        Returns:
-            None
-        """
-        if not isinstance(var_name, str):
-            logger.error("Cannot set private variable if arg isn't type:str")
-            raise TypeError
-        if not isinstance(var_val, bool) and var_val is not None:
-            logger.error("Cannot set variable to anything but bool or None")
-            raise TypeError
+    #     Args:
+    #         var_name (str): The name of the private variable to be set, not including the underscore prefix
 
-        setattr(self, '__'+var_name, var_val)
-        setattr(self, '__'+var_name+'_time', datetime.now())
+    #         var_val (bool): The value to set `self.__var_name` to.  Can be `None`
 
-    def get(self, var_name):
-        """Generic get method for private variables using introspection
+    #     Returns:
+    #         None
+    #     """
+    #     if not isinstance(var_name, str):
+    #         logger.error("Cannot set private variable if arg isn't type:str")
+    #         raise TypeError
+    #     if not isinstance(var_val, bool) and var_val is not None:
+    #         logger.error("Cannot set variable to anything but bool or None")
+    #         raise TypeError
 
-        Args:
-            var_name (str): The name of the provate variable who's value is to be returned, not_including the underscore prefix
+    #     setattr(self, '__'+var_name, var_val)
+    #     setattr(self, '__'+var_name+'_time', datetime.now())
 
-        Returns:
-            var_val: The value of the variable
-        """
-        if not isinstance(var_name, str):
-            logger.error("Cannot get private variable if name passed isn't string")
-            raise TypeError
-        if var_name[:2] == '__':
-            logger.warning("var_name input expected to not have '__' prefix")
-            var_name = var_name[2:]
+    # def get(self, var_name):
+    #     """Generic get method for private variables using introspection
 
-        return getattr(self, '__'+var_name)
+    #     Args:
+    #         var_name (str): The name of the provate variable who's value is to be returned, not_including the underscore prefix
+
+    #     Returns:
+    #         var_val: The value of the variable
+    #     """
+    #     if not isinstance(var_name, str):
+    #         logger.error("Cannot get private variable if name passed isn't string")
+    #         raise TypeError
+    #     if var_name[:2] == '__':
+    #         logger.warning("var_name input expected to not have '__' prefix")
+    #         var_name = var_name[2:]
+
+    #     return getattr(self, '__'+var_name)
 
 
 documents = Table("documents", metadata,
@@ -182,7 +215,7 @@ mapper(Document, documents,
 })
 
 mapper(DocumentAssoc, document_associations, properties={
-    'document':relation(Document, backref='association')
+    'document':relation(Document, backref='association', lazy='joined')
 })
 
 ##############################

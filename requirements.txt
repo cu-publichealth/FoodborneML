@@ -61,7 +61,7 @@ pyOpenSSL==0.15.1
 pyasn1==0.1.8
 pycparser==2.14
 pymssql==2.1.1
-pyodbc==2.1.0-unsupported
+pyodbc==3.0.10
 pyparsing==2.0.3
 python-dateutil==2.4.2
 python-twitter==2.2

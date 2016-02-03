@@ -7,4 +7,4 @@ virtualenv --system-site-packages testvenv
 source testvenv/bin/activate
 
 # now install the requirements from pip
-pip install -r deploy_requirements.txt
+pip install -r travis_requirements.txt

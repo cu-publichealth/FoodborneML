@@ -33,7 +33,7 @@ class YelpClassify(object):
         review.document.fp_pred = self.sick.predict_proba([review.text])[0][1]
         return review
 
-    def classify_reviews(self, all=False, since=30, yield_per=1000, verbose=0):
+    def classify_reviews(self, all=False, any=False, since=30, yield_per=1000, verbose=0):
         logger.info("Classifying all reviews from the past %i days" % since)
         echo = True if verbose >= 2 else False
         db = getDBSession(echo=echo, autoflush=False, autocommit=True)
@@ -41,6 +41,9 @@ class YelpClassify(object):
             if all:
                 query = db.query(YelpReview).order_by(YelpReview.id.asc())
                 count = db.query(func.count(YelpReview.id)).scalar()
+            elif any:
+                query = (db.query(YelpReview).filter(YelpReview.document.fp_pred == None)
+                                            .order_by(YelpReview.created.desc()))
             else:
                 delta = datetime.timedelta(since)
                 backdate = datetime.datetime.now() - delta

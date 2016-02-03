@@ -21,10 +21,10 @@ def main():
 # model and database related
 import foodbornenyc.models.models as models
 @main.command()
-@click.argument('really')
-def dropdb(really):
+def dropdb():
     """ Drop every single table in the database...DANGEROUS 
         pass 'yes' or 'y' if you really want to do this..."""
+    really = raw_input("Are you sure? This will drop all the tables and cannot be reversed. Enter y or yes to continue")
     if really.lower() == "yes" or really.lower()=="y":
         models.dropAllTables()
     else:

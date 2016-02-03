@@ -1,13 +1,28 @@
+# modeled off of scikit-learn's travis config
+sudo: false
+
 language: python
 python:
-  - "2.7_with_system_site_packages"
+  - "2.7"
 
 # command to install 
-before_install:
-    - sudo apt-get update
-    - sudo apt-get install python-numpy python-scipy
+#before_install:
+#    - sudo apt-get update
+#    - sudo apt-get install python-numpy python-scipy
 
-install: "pip install -r deploy_requirements.txt --use-mirrors"
+cache:
+  apt: true
+  directories:
+    - $HOME/.cache/pip
+
+addons:
+  apt:
+    package:
+      - libatlas3gf-base
+      - python-numpy
+      - python-scipy
+
+install: "pip install -r deploy_requirements.txt"
 
 # command to run tests
 # script: 

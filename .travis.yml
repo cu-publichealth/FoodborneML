@@ -1,5 +1,5 @@
 # modeled off of scikit-learn's travis config
-sudo: false
+sudo: true
 
 language: python
 python:

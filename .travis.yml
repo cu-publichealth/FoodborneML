@@ -18,11 +18,19 @@ cache:
 addons:
   apt:
     package:
+      - libblas-dev
+      - liblapack-dev
+      - libatlas-dev
+      - gfortran
       - libatlas3gf-base
       - python-numpy
       - python-scipy
+#      - python-matplotlib
+#      - ipython
+#      - ipython-notebook
+#      - python-pandas
 
-install: "pip install -r deploy_requirements.txt"
+install: source ci_install.sh
 
 # command to run tests
 # script: 

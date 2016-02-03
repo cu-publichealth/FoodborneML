@@ -44,6 +44,11 @@ This install guide is currently just intended for Mac OSX in the Terminal. Note 
     ```
 
     Note that in the future you'll need to activate the environment with `workon fbnyc` or deactivate it with `deactivate fbnyc`
+    
+    You'll know that you're in a virtual environment because your command prompt will be prefixed with the environment name, eg.:
+    ```bash
+    (fbnyc) FoodborneNYC thomaseffland$
+    ```
 
 7. Install `git` if you don't have it already with `brew install git`
 
@@ -51,8 +56,8 @@ This install guide is currently just intended for Mac OSX in the Terminal. Note 
 
 9. Install all of the python dependencies
 
-    - If you just want to run the tool as is then use `pip install -r deploy_requirements.txt`
-    - If you want to develop the code, use `pip install -r requirements.txt`
+    - If you just want to run the tool as is then use `pip install --upgrade -r deploy_requirements.txt`
+    - If you want to develop the code, use `pip install --upgrade -r requirements.txt`
 
 10. Congratulations! You now have FoodborneNYC installed. You can start messing with the code. Check out the command line options with `python main.py --help`
 

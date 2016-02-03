@@ -3,7 +3,7 @@
 
 language: python
 python:
-  - "2.7"
+  - "2.7_with_system_site_packages"
 
 # command to install 
 #before_install:
@@ -16,6 +16,7 @@ cache:
     - $HOME/.cache/pip
 
 before_install:
+  - suod apt-get update
   - sudo apt-get install libblas-dev liblapack-dev libatlas-dev gfortran libatlas3gf-base python-numpy python-scipy
 
 # addons:

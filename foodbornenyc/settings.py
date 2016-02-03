@@ -3,10 +3,10 @@ Global Settings
 """
 
 database_config = {
-    'user': 'user',
-    'password': 'password',
-    'dbhost': '128.59.22.184:1433/dohmh_test',
-    'dbbackend':'mssql+pymssql'
+    'user': 'johnnybananas',
+    'password': 'placeholder_password',
+    'dbhost': 'toy.db',
+    'dbbackend':'sqlite'
 }
 
 yelp_download_config = {

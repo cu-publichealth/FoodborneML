@@ -1,5 +1,5 @@
 # modeled off of scikit-learn's travis config
-sudo: true
+# sudo: true
 
 language: python
 python:
@@ -16,7 +16,7 @@ cache:
     - $HOME/.cache/pip
 
 before_install:
-  "sudo apt-get install libblas-dev liblapack-dev libatlas-dev gfortran libatlas3gf-base python-numpy python-scipy"
+  - sudo apt-get install libblas-dev liblapack-dev libatlas-dev gfortran libatlas3gf-base python-numpy python-scipy
 
 # addons:
 #   apt:

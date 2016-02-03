@@ -15,16 +15,19 @@ cache:
   directories:
     - $HOME/.cache/pip
 
-addons:
-  apt:
-    package:
-      - libblas-dev
-      - liblapack-dev
-      - libatlas-dev
-      - gfortran
-      - libatlas3gf-base
-      - python-numpy
-      - python-scipy
+before_install:
+  "sudo apt-get install libblas-dev liblapack-dev libatlas-dev gfortran libatlas3gf-base python-numpy python-scipy"
+
+# addons:
+#   apt:
+#     package:
+#       - libblas-dev
+#       - liblapack-dev
+#       - libatlas-dev
+#       - gfortran
+#       - libatlas3gf-base
+#       - python-numpy
+#       - python-scipy
 #      - python-matplotlib
 #      - ipython
 #      - ipython-notebook

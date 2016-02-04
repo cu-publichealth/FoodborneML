@@ -3,91 +3,120 @@
 The main module of the models package
 
 To get the configured database engine, call:
-    getDBEngine()
+    get_db_engine()
 
 To get a session for the DB call:
-    getDBSession()
+    get_db_session()
 
 To set up the database schema call:
-    setupDB()
+    setup_db()
 
 To drop all tables from the database call:
-    dropAllTables()
+    drop_all_tables()
 
 """
 import traceback
 
-from ..util.util import getLogger
-logger = getLogger(__name__)
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
 
-# metadata object shared between models
-from sqlalchemy import MetaData, func
-metadata = MetaData()
-# import each of the used model definition files
-import locations
-import businesses
-import documents
-import download_history
+from foodbornenyc.settings import database_config as config
 
-from ..settings import database_config as config
+from foodbornenyc.util.util import get_logger
+logger = get_logger(__name__)
 
-def getDBEngine(echo=False, verbose=False):
-    from sqlalchemy import create_engine
+def get_db_engine(echo=False, verbose=False):
+    """Take the database settings and construct an engine for the database
 
+    Args:
+        echo (bool): If `True` SQLAlchemy will print all SQL statements to stdout
+        verbose (bool): If `True` the logger will notify when the engine is created
+
+    Returns:
+        engine: The SQLAlchemy engine object.  Used to executre statements or create ORM sessions
+    """
     user = config['user']
     password = config['password']
     db_host = config['dbhost']
     db_backend = config['dbbackend']
 
     if 'sqlite' in db_backend:
-        engine = (create_engine('%s:///%s'
-            % (db_backend, db_host), echo=echo ))
+        engine = create_engine('%s:///%s' % (db_backend, db_host), echo=echo)
     else:
         engine = (create_engine('%s://%s:%s@%s?charset=utf8'
-            % (db_backend, user, password, db_host), echo=echo ))
+                                % (db_backend, user, password, db_host), echo=echo))
 
     if verbose:
-        logger.info("Engine created for %s::%s" % (db_host, user))
+        logger.info("Engine created for %s::%s", db_host, user)
 
     return engine
 
-def getDBSession(echo=False, autoflush=True, autocommit=False):
-    from sqlalchemy.orm import sessionmaker
-    return sessionmaker(bind=getDBEngine(echo=echo), 
+def get_db_session(echo=False, autoflush=True, autocommit=False):
+    """Create a SQLAlchemy `Session` bound to the engine defined in `get_db_engine`
+
+    Args:
+        echo (bool): Whether echo sql statements
+        autoflush (bool): If `False` the session won't automatically flush
+                          changes to the transaction. Use in conjuntion with
+                          `autocommit=True`.
+        autocommit (bool): If `True`, the transaction must be explicitly opened and closed.
+
+    Returns:
+        session (Session): A session object bound to the engine
+
+    Notes:
+        `autoflush` and `autocommit` should only be set to `False` and `True` if you want to
+        manage transactions yourself. Useful if you have to deal with a large amount of data
+        and want to piece transactions.
+
+        To do this correctly, use a session begin context to make sure the xact is always commited.
+        eg:
+
+        ```
+        db = get_db_session(autoflush=False, autocommit=True)
+        with db.begin():
+            # use the session here
+            # you can't not commit using the `with` context
+        ```
+    """
+    return sessionmaker(bind=get_db_engine(echo=echo),
                         autoflush=autoflush,
                         autocommit=autocommit)()
 
-def setupDB():
-    engine = getDBEngine(echo=True)
+def setup_db():
+    """Set up all tables in the database, or add tables that don't yet exist.
+
+    Reflects all tables that have been registered with the `metadata` object in the `models` module.
+
+    Args:
+        None
+
+    Returns:
+        None
+    """
+    engine = get_db_engine(echo=True)
     #instantiate the schema
     try:
         metadata.create_all(engine)
         logger.info("Successfully instantiated Database with model schema")
-    except:
+    except Exception:
         logger.error("Failed to instantieate Database with model schema")
         traceback.print_exc()
 
-def dropAllTables():
-    print "BLAH"
-    engine = getDBEngine(echo=True)
-    # drop the schema
+def drop_all_tables():
+    """Tear down all data, tables, and the schema.  Very dangerous.
+
+    Args:
+        None
+
+    Returns:
+        None
+    """
+    engine = get_db_engine(echo=True)
     try:
         metadata.reflect(engine, extend_existing=True)
         metadata.drop_all(engine)
         logger.info("Successfully dropped all the database tables in the schema")
-    except:
+    except Exception:
         logger.error("Failed to drop all tables")
         traceback.print_exc()
-
-def page_query(query, yield_per):
-    """Do the same thing as yield_per with eager loading.
-    Inspired by http://stackoverflow.com/questions/1145905/sqlalchemy-scan-huge-tables-using-orm"""
-    offset = 0
-    while True:
-        returned = False
-        for elem in query.limit(yield_per).offset(offset):
-            returned = True
-            yield elem
-        offset += yield_per
-        if not returned:
-            break

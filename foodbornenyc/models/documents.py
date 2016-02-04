@@ -24,7 +24,7 @@ Minimal extra code.
 For example:
 
     ```
-    db = getDBSession()
+    db = get_db_session()
     yr = db.query(YelpReview).first()
 
     print yr.document
@@ -32,15 +32,14 @@ For example:
 """
 from datetime import datetime
 
-from sqlalchemy import Column, Table
+from sqlalchemy import Column, Table, ForeignKey
 from sqlalchemy import Float, String, UnicodeText, DateTime, Boolean
-from sqlalchemy import ForeignKeyConstraint, ForeignKey
 from sqlalchemy.orm import mapper, backref, relation, class_mapper
 
-from foodbornenyc.models.models import metadata
+from foodbornenyc.models.metadata import metadata
 
-from foodbornenyc.util.util import getLogger
-logger = getLogger(__name__)
+from foodbornenyc.util.util import get_logger
+logger = get_logger(__name__)
 
 
 class DocumentAssoc(object):
@@ -235,9 +234,10 @@ yelp_reviews = Table('yelp_reviews', metadata,
                      Column('created', DateTime),
                      Column('updated_at', DateTime,
                             default=datetime.now, onupdate=datetime.now),
-                     Column('business_id', String(64), nullable=False),
-                     ForeignKeyConstraint('business_id', 'businesses.id',
-                                          name='fk_rev_biz_id'))
+                     Column('business_id', String(64), 
+                            ForeignKey('businesses.id',
+                                       name='fk_rev_biz_id'),
+                            nullable=False))
 
 mapper(YelpReview, yelp_reviews)
 documentable(YelpReview, 'document') # adds a .document property to all YelpReviews

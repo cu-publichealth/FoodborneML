@@ -7,7 +7,7 @@ from sqlalchemy import Column, Table
 from sqlalchemy import Float, String, DateTime
 from sqlalchemy.orm import mapper
 
-from foodbornenyc.models.models import metadata
+from foodbornenyc.models.metadata import metadata
 from foodbornenyc.util.util import xstr
 
 class Location(object):

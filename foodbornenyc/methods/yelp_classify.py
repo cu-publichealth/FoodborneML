@@ -6,11 +6,11 @@ This method takes in Yelp reviews and classifies them.  Then persists those clas
 # import importlib #lets you import modules introspectively
 from ..settings import yelp_classify_config as config
 
-from ..models.models import getDBSession, page_query
+from ..models.models import get_db_session, page_query
 from ..models.documents import YelpReview, documents
 
-from ..util.util import getLogger
-logger = getLogger(__name__)
+from ..util.util import get_logger
+logger = get_logger(__name__)
 
 from sqlalchemy import func, select
 from sqlalchemy.orm import load_only
@@ -37,7 +37,7 @@ class YelpClassify(object):
 
     def classify_reviews(self, all=False, any=False, since=30, yield_per=1000, verbose=0):
         echo = True if verbose >= 2 else False
-        db = getDBSession(echo=echo, autoflush=False, autocommit=True)
+        db = get_db_session(echo=echo, autoflush=False, autocommit=True)
         with db.begin():
             if all:
                 logger.info("Classifying all reviews. This could take a very long time")

@@ -2,7 +2,7 @@
 The master utilities file
 
 Available utilities:
-- getLogger(__name__): get a module logger that prints to STDOUT
+- get_logger(__name__): get a module logger that prints to STDOUT
 - xuni(s): take a string or unicode and convert it utf8 unicode
 - xstr(s): take a unicode and convert it to ascii -- could underflow
 
@@ -10,7 +10,7 @@ Available utilities:
 
 import logging
 import sys
-def getLogger(app, level='DEBUG'):
+def get_logger(app, level='DEBUG'):
     """
     A system level wrapping of the python logging class to make getting a logger take one function call
 

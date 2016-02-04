@@ -8,9 +8,7 @@ This is currently just for twitter users
 
 from sqlalchemy import Column, Integer, Float, Unicode, UnicodeText, DateTime
 
-from base import Base
-
-class TwitterUser(Base):
+class TwitterUser(object):
     __tablename__ = 'twitter_user'
 
     id = Column(Integer, primary_key=True)

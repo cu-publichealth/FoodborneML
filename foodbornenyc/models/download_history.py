@@ -10,7 +10,7 @@ from sqlalchemy import Column, Table
 from sqlalchemy import Boolean, Date
 from sqlalchemy.orm import mapper
 
-from foodbornenyc.models.models import metadata
+from foodbornenyc.models.metadata import metadata
 
 class YelpDownloadHistory(object):
     """Bookkeeping data model for downloading the daily yelp syndication

@@ -7,24 +7,13 @@ The Yelp models
 """
 from datetime import datetime
 
-from sqlalchemy import Column, Table, ForeignKeyConstraint, PrimaryKeyConstraint
+from sqlalchemy import Column, Table, ForeignKey, PrimaryKeyConstraint
 from sqlalchemy import Float, String, Unicode, Boolean, DateTime
 from sqlalchemy.orm import mapper, relationship, backref
 
-from foodbornenyc.models.models import metadata
+from foodbornenyc.models.metadata import metadata
 from foodbornenyc.models.locations import Location
 from foodbornenyc.models.documents import YelpReview
-
-business_category_table = Table('businesses_categories', metadata,
-                                Column('business_id', String(64)),
-                                Column('category_alias', String(255)),
-                                ForeignKeyConstraint('business_id',
-                                                     'businesses.id',
-                                                     name='fk_biz_id'),
-                                ForeignKeyConstraint('category_alias',
-                                                     'yelp_categories.alias',
-                                                     name='fk_cat_alias'),
-                                PrimaryKeyConstraint('business_id', 'category_alias'))
 
 class YelpCategory(object):
     """YelpCategory data model.
@@ -80,13 +69,24 @@ businesses = Table('businesses', metadata,
                    Column('last_updated', DateTime),
                    Column('updated_at', DateTime, default=datetime.now, onupdate=datetime.now),
                    Column('is_closed', Boolean, nullable=False, default=False),
-                   Column('location_address', String(255*6)),
-                   ForeignKeyConstraint(['location_address'], ['locations.street_address'],
-                                        name='fk_loc'))
+                   Column('location_address', String(255*6),
+                          ForeignKey('locations.street_address',
+                                     name='fk_loc')))
 
-mapper(Business, businesses, properties={
-       'location': relationship(Location, backref=backref('businesses')),
-       'reviews': relationship(YelpReview, backref=backref('businesses')),
-       'categories': relationship(YelpCategory, secondary=business_category_table,
-                               backref="businesses")
+business_category_table = Table('businesses_categories', metadata,
+                                Column('business_id', String(64),
+                                       ForeignKey('businesses.id',
+                                                  name='fk_biz_id'),
+                                       primary_key=True),
+                                Column('category_alias', String(255),
+                                       ForeignKey('yelp_categories.alias',
+                                                  name='fk_cat_alias'),
+                                       primary_key=True))
+
+mapper(Business, businesses, 
+       properties={
+           'location': relationship(Location, backref=backref('businesses')),
+           'reviews': relationship(YelpReview, backref=backref('businesses')),
+           'categories': relationship(YelpCategory, secondary=business_category_table,
+                                      backref="businesses")
        })

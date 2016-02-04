@@ -11,13 +11,13 @@ import gzip
 
 from sqlalchemy import exists
 
-from ..util.util import getLogger, xstr, xuni
-logger = getLogger(__name__)
+from ..util.util import get_logger, xstr, xuni
+logger = get_logger(__name__)
 
 from ..settings import yelp_download_config as config
 from ..settings import database_config as dbconfig
 
-from ..models.models import getDBSession
+from ..models.models import get_db_session
 from ..models.download_history import YelpDownloadHistory
 
 def downloadURLToFile(url, data_dir, filename):
@@ -88,7 +88,7 @@ def downloadLatestYelpData():
             so we just try exact filenames with presigned urls for the past month
     """
     # first make sure we haven't already downloaded the file
-    db = getDBSession()
+    db = get_db_session()
     ydh = db.query(YelpDownloadHistory).filter(YelpDownloadHistory.date==date.today()).scalar()
 
     # if it doesn't exist or it's old, create the new one
@@ -152,7 +152,7 @@ def unzipYelpFeed(filename):
     Take in a .gz file and unzip it, saving it with the same file name
     """
     # first make sure we haven't already unzipped it
-    db = getDBSession()
+    db = get_db_session()
     ydh = db.query(YelpDownloadHistory).filter(YelpDownloadHistory.date==date.today()).scalar()
 
     # if it doesn't exist, error out because we need to download it
@@ -252,7 +252,7 @@ def updateDBFromFeed(filename, geocode=True):
 
     """
     # database handler object
-    db = getDBSession(echo=False, autoflush=False, autocommit=True)
+    db = get_db_session(echo=False, autoflush=False, autocommit=True)
 
     # check YelpDownloadHistory to see if we've already uploaded the feed
     ydh = db.query(YelpDownloadHistory).filter(YelpDownloadHistory.date==date.today()).scalar()
@@ -652,7 +652,7 @@ def geocodeUnknownLocations(wait_time=2, run_time=240):
     """
     geoLocator = Nominatim()
     # print geoLocator.geocode("548 riverside dr., NY, NY, 10027") # test
-    db = getDBSession()
+    db = get_db_session()
     unknowns = db.query(Location).filter(Location.latitude==None).all()
     shuffle(unknowns) # give them all a fighting chance
     logger.info("Attempting to geocode random unknown locations for %i minutes" % run_time)

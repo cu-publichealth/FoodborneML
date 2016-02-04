@@ -37,7 +37,8 @@ before_install:
 install: source ci_install.sh
 
 # command to run tests
-script: py.test 
+script: 
+  - py.test 
 
 # command to notify after failed build
 # after_failure:

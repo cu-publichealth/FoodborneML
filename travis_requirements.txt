@@ -3,6 +3,7 @@ click==5.1
 docutils==0.12
 geopy==1.11.0
 jmespath==0.9.0
+pytest==2.8.7
 python-dateutil==2.4.2
 requests==2.8.1
 schedule==0.3.2

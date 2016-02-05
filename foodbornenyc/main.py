@@ -8,8 +8,8 @@ The commandline entrypoint into the package
 
 """
 import click
-from foodbornenyc.util.util import get_logger
 
+from foodbornenyc.util.util import get_logger
 logger = get_logger(__name__)
 
 @click.group()
@@ -45,14 +45,13 @@ def initdb():
 from foodbornenyc.sources import yelp_fast as Yelp
 @main.command()
 @click.option('-y', '--yelp', is_flag=True, help="update yelp")
-# @profile # needs to be uncommented to profile yelp_fast
 def download(yelp):
     """ download content from sources"""
     if yelp:
-        fname = Yelp.downloadLatestYelpData()
-        data = Yelp.unzipYelpFeed(fname)
+        fname = Yelp.download_latest_yelp_data()
+        data = Yelp.unzip_file(fname)
         # data = 'foodbornenyc/sources/yelpfiles/yelp_businesses.json' # for testing w/o downloading
-        Yelp.updateDBFromFeed(data, geocode=False)
+        Yelp.upsert_yelpfile_to_db(data, geocode=False)
         
     return
 
@@ -60,11 +59,11 @@ from foodbornenyc.methods import yelp_classify
 @main.command()
 @click.option('-s', '--since', default=7, help="Number of days in past to classify")
 @click.option('-u', '--unseen', default=False, is_flag=True, help="Whether to classify any review that hasn't already been classified")
-@click.option('-a', '--all', default=False, is_flag=True, help="Whether to do just classify all reviews.  Overrides --since")
+@click.option('-e', '--every', default=False, is_flag=True, help="Whether to do just classify all reviews.  Overrides --since")
 @click.option('-v', '--verbose', default=1, help="Specify the verbosity level")
-def classify_yelp(since, all, unseen, verbose):
+def classify_yelp(since, unseen, every, verbose):
     classifier = yelp_classify.YelpClassify()
-    classifier.classify_reviews(all=all, any=unseen, since=since, verbose=verbose)
+    classifier.classify_reviews(every=every, unseen=unseen, since=since, verbose=verbose)
 
 @main.command()
 @click.option('-w', '--wait', default=2, help="Number of seconds before timeout")
@@ -85,15 +84,8 @@ def deploy(yelp):
     if yelp:
         DeployYelp.deploy()
 
-
 ##################################
 # The MAIN function: DON'T TOUCH #
 ##################################      
 if __name__ == "__main__":
     main()
-
-
-### SIMPLE PYTHON EXPERIMENT ###
-#from foodbornenyc.experiments.simpletwitterclassify import run
-#run()
-

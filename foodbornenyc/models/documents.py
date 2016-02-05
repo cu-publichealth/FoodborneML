@@ -212,12 +212,14 @@ mapper(DocumentAssoc, document_associations,
 ##############################
 class YelpReview(object):
     """Data model for Yelp reviews that we get from JSON feed"""
-    def __init__(self, rating=None, text=None, user_name=None, yelp_id=None):
+    def __init__(self, yelp_id=None, rating=None, text=None, user_name=None):
+        self.id = yelp_id
         self.rating = rating
         self.text = text
         self.user_name = user_name
-        self.id = yelp_id
-        # self.document = Document(id=yelp_id, type=yelp_reviews.name)
+        self.created = datetime.now()
+        self.document = Document(yelp_id) # not sure if this jives with the polymorphic property
+        # TODO: write test for automatic doc creation
 
     def __repr__(self):
         return "<YelpReview: %r>" % self.text

@@ -9,9 +9,9 @@ import time
 from ..sources import yelp_fast as Yelp
 def download():
     """ download syndication from Yelp and upsert to database"""
-    fname = Yelp.downloadLatestYelpData()
-    data = Yelp.unzipYelpFeed(fname)
-    Yelp.updateDBFromFeed(data, geocode=False)
+    fname = Yelp.download_latest_yelp_data()
+    data = Yelp.unzip_file(fname)
+    Yelp.upsert_yelpfile_to_db(data, geocode=False)
 
 from ..methods import yelp_classify
 from..settings import yelp_classify_config

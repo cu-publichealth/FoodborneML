@@ -2,58 +2,63 @@
 The Yelp API model
 """
 
-import botocore
+import botocore.session
 from datetime import datetime, date, timedelta
 import traceback
 import requests
 import time
 import gzip
+from json import loads
 
-from sqlalchemy import exists
+from sqlalchemy import exists, desc
+from geopy.geocoders import Nominatim #open street map -- free :)
 
-from ..util.util import get_logger, xstr, xuni
+# import sqlalchemy
+from foodbornenyc.models.models import get_db_session
+from foodbornenyc.models.download_history import YelpDownloadHistory
+from foodbornenyc.models.businesses import Business, YelpCategory
+from foodbornenyc.models.businesses import businesses, categories, business_category_table
+from foodbornenyc.models.locations import Location, locations
+from foodbornenyc.models.documents import YelpReview, Document
+from foodbornenyc.models.documents import yelp_reviews, documents, document_associations
+
+from foodbornenyc.settings import yelp_download_config as config
+from foodbornenyc.settings import database_config as dbconfig
+
+from foodbornenyc.util.util import get_logger, xstr, xuni, sec_to_hms
 logger = get_logger(__name__)
 
-from ..settings import yelp_download_config as config
-from ..settings import database_config as dbconfig
+def download_url_to_file(url, data_dir, filename):
+    """Download a url to local file.
 
-from ..models.models import get_db_session
-from ..models.download_history import YelpDownloadHistory
-
-def downloadURLToFile(url, data_dir, filename):
-    """
-        Download a url to local file in streaming manner.
-
-        This keeps a low memory footprint
+        Write to file as stream. This keeps a low memory footprint
 
         Args:
-            url: the url to download from
+            url (str): the url to download from
 
-            data_dir: the local directory to write the file
+            data_dir (str): the local directory to write the file
 
-            filename: the name of the file to write
+            filename (str): the name of the file to write
 
-        Notes:
-            You may think: That we should unzip as we download. Don't. It's really slow
-
-        TODO: 
-            * Make error handling more robust, can be misleading right now
-
+        Returns:
+            None
+            
     """
     response = requests.get(url, stream=True)
 
     # throw exception if response has issues
     if not response.ok:
-        print "BAD RESPONSE"
+        # TODO: This is poor handling, make it more explicit
+        logger.warning("BAD RESPONSE")
         raise Exception
 
     total_size = response.headers.get('content-length')
-    print "Yelp feed total size: %i MB" % (int(total_size)/(1024*1024))
+    logger.info("Yelp feed total size: %i MB", int(total_size)/(1024*1024))
 
-    out_file = data_dir+filename
+    out_file = data_dir + filename
     start_time = time.time()
+    # you may think: we should unzip as we download. Don't. It's really slow
     with open(out_file, 'wb') as handle:
-
         # response ok, do the download and give info during
         block_size = 1024*4
         count = 1
@@ -63,8 +68,9 @@ def downloadURLToFile(url, data_dir, filename):
             duration = time.time() - start_time
             progress_size = int(count*block_size)/(1024*1024)
             if count % 100 == 0:
-                print "\r Downloading Yelp Data...%.2f%%  %i MB downloaded, %d seconds so far" %\
-                        (percent, progress_size, duration),
+                # the only place not logging is ok: when doing carriage returns (logging can't)
+                print ("\r Downloading Yelp Data...%.2f%%  %i MB downloaded, %d seconds so far" %
+                       (percent, progress_size, duration),)
 
             # write it out
             handle.write(block)
@@ -72,10 +78,8 @@ def downloadURLToFile(url, data_dir, filename):
             count +=1
     print # gets rid of final carriage return
     
-import botocore.session
-def downloadLatestYelpData():
-    """
-        Attempt to download the latest gzip file from the Yelp Syndication.
+def download_latest_yelp_data():
+    """Attempt to download the latest gzip file from the Yelp Syndication.
 
         Args:
             None
@@ -83,10 +87,13 @@ def downloadLatestYelpData():
         Returns:
             local_file: the name of where the yelp feed was downloaded to
 
-        Note: 
+        Notes: 
             Yelp doesn't let us look at the bucket, 
             so we just try exact filenames with presigned urls for the past month
     """
+    #get whhere to save the feed from config
+    local_file = config['rawdata_dir'] + config['local_file']
+
     # first make sure we haven't already downloaded the file
     db = get_db_session()
     ydh = db.query(YelpDownloadHistory).filter(YelpDownloadHistory.date==date.today()).scalar()
@@ -101,23 +108,21 @@ def downloadLatestYelpData():
     # if we already downloaded, log and return
     if ydh.downloaded:
         logger.info("Already downloaded the Yelp feed for today...")
-        local_file = config['rawdata_dir'] + config['local_file']
         return local_file
 
     # set up botocore client
     session = botocore.session.get_session()
     client = session.create_client('s3')
 
-    # try to donwload most recent data (go up to one month back)
+    # try to download most recent data (go up to one month back)
     for day_delta in range(31):
-        # generate the correct filenmae for a day
+        # generate the correct filename for a day
         dateformat = '%Y%m%d'
         day = date.today() - timedelta(day_delta)
         day_str = day.strftime(dateformat) # eg '20151008'
         ext = '_businesses.json.gz'
         filename =  day_str + ext
-        logger.info("Attempting to get Yelp Reviews from %s....." 
-                    % day.strftime("%m/%d/%Y"))
+        logger.info("Attempting to get Yelp Reviews from %s.....", day.strftime("%m/%d/%Y"))
 
         # generate a presigned url for the file, 
         # since yelp doesn't give us bucket access
@@ -128,12 +133,15 @@ def downloadLatestYelpData():
                 ExpiresIn=3600 # 1 hour in seconds
                 )
         # do the downloading
-        print "URL: ", url
+        logger.info("Feed URL: ", url)
         try:
-            downloadURLToFile(url, config['rawdata_dir'], config['local_file'])
+            download_url_to_file(url, config['rawdata_dir'], config['local_file'])
+            # if we succeed, move on
             break
 
         except Exception:
+            # TODO: Throw more explicit exceptions from `download_url_to_file`
+            # so we can handle it more explicitly, currenlty it can be misleading
             if day_delta == 30: 
                 logger.warning("NO YELP DATA AVAILABLE FOR THE PAST MONTH!")
                 return
@@ -142,12 +150,12 @@ def downloadLatestYelpData():
                      Trying the day before." % day.strftime("%m/%d/%Y"))
 
     logger.info("Latest Yelp Data successfully downloaded from feed.")
+    # save the success to download history
     ydh.downloaded = True
     db.commit()
-    local_file = config['rawdata_dir'] + config['local_file']
     return local_file
 
-def unzipYelpFeed(filename):
+def unzip_file(filename):
     """
     Take in a .gz file and unzip it, saving it with the same file name
     """
@@ -180,45 +188,7 @@ def unzipYelpFeed(filename):
     db.commit()
     return rawfile
 
-# for profiling
-import cProfile
-import StringIO
-import pstats
-import contextlib
-@contextlib.contextmanager
-def profiled():
-    """
-    A profiling helper function needed by kerprof to do a 
-    line by line profiling of a particular function.
-
-    To profile a function add the ```@profile``` decorator around the def
-    """
-
-    pr = cProfile.Profile()
-    pr.enable()
-    yield
-    pr.disable()
-    s = StringIO.StringIO()
-    ps = pstats.Stats(pr, stream=s).sort_stats('cumulative')
-    ps.print_stats()
-    # uncomment this to see who's calling what
-    # ps.print_callers()
-    print s.getvalue()
-
-from json import loads
-
-from ..models.businesses import Business, YelpCategory
-from ..models.businesses import businesses, categories, business_category_table
-from ..models.locations import Location, locations
-from ..models.documents import YelpReview, Document, yelp_reviews, documents, document_associations
-import sqlalchemy
-from sqlalchemy import desc
-
-
-from geopy.geocoders import Nominatim #open street map -- free :)
-
-# @profile # uncomment to profile this function using the
-def updateDBFromFeed(filename, geocode=True):
+def upsert_yelpfile_to_db(filename, geocode=True):
     """
     This takes in the JSON file of all of the Yelp businesses and
     all the affiliate data (reviews, categories, etc.) and upserts them to the DB
@@ -310,7 +280,7 @@ def updateDBFromFeed(filename, geocode=True):
     with db.begin():
         db_biz_ids = set([ b.id 
                         for b in db.query(Business.id).all() ])
-        db_review_ids = set([ r.yelp_id 
+        db_review_ids = set([ r.id 
                             for r in db.query(YelpReview.id).all() ])
         db_locations = set([ l.street_address 
                             for l in db.query(Location.street_address).all() ])

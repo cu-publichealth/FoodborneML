@@ -20,6 +20,7 @@ import traceback
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
+from metadata import metadata
 from foodbornenyc.db_settings import database_config as config
 
 from foodbornenyc.util.util import get_logger

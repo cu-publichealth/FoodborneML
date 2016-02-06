@@ -1,14 +1,6 @@
 """
 Global Settings
 """
-
-database_config = {
-    'user': 'johnnybananas',
-    'password': 'placeholder_password',
-    'dbhost': 'toy.db',
-    'dbbackend':'sqlite'
-}
-
 yelp_download_config = {
     'rawdata_dir': 'foodbornenyc/sources/yelpfiles/', # the dir to download the yelp data from S3 to
     'local_file':  'yelp_businesses.json.gz',

@@ -23,7 +23,7 @@ from foodbornenyc.models.documents import YelpReview, Document
 from foodbornenyc.models.documents import yelp_reviews, documents, document_associations
 
 from foodbornenyc.settings import yelp_download_config as config
-from foodbornenyc.settings import database_config as dbconfig
+from foodbornenyc.db_settings import database_config as dbconfig
 
 from foodbornenyc.util.util import get_logger, xstr, xuni, sec_to_hms
 logger = get_logger(__name__)

@@ -20,7 +20,7 @@ import traceback
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
-from foodbornenyc.settings import database_config as config
+from foodbornenyc.db_settings import database_config as config
 
 from foodbornenyc.util.util import get_logger
 logger = get_logger(__name__)

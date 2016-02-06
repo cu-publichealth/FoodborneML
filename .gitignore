@@ -3,7 +3,6 @@
 *.json
 *.json.gz
 *.npy
-*.pkl
 *ipynb_checkpoints*
 simple_twitter_stream.py
 setup.py

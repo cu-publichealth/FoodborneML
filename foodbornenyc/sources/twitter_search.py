@@ -72,6 +72,7 @@ fields = [
 
 def query_twitter(how_long=0):
     """ Inteface function """
+    # the authorization credentials are stored in db settings, which isn't updated to gihub
     twitter = Twython(twitter_config['consumer_key'],
                       twitter_config['consumer_secret'],
                       twitter_config['access_token'],

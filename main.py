@@ -42,16 +42,22 @@ def initdb():
     """
     models.setup_db()
 
-from foodbornenyc.sources import yelp_fast as Yelp
+from foodbornenyc.sources import yelp_fast
+from foodbornenyc.sources import twitter_search
 @main.command()
 @click.option('-y', '--yelp', is_flag=True, help="update yelp")
-def download(yelp):
+@click.option('-t', '--twitter', is_flag=True, help="Do twitter search")
+@click.option('-s', '--seconds', default=60, help="How long to query Twitter for")
+def download(yelp, twitter, seconds):
     """ download content from sources"""
     if yelp:
-        fname = Yelp.download_latest_yelp_data()
-        data = Yelp.unzip_file(fname)
+        fname = yelp_fast.download_latest_yelp_data()
+        data = yelp_fast.unzip_file(fname)
         # data = 'foodbornenyc/sources/yelpfiles/yelp_businesses.json' # for testing w/o downloading
-        Yelp.upsert_yelpfile_to_db(data, geocode=False)
+        yelp_fast.upsert_yelpfile_to_db(data, geocode=False)
+
+    if twitter:
+        twitter_search.query_twitter(how_long=seconds)
         
     return
 

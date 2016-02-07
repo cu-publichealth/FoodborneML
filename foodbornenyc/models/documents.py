@@ -31,9 +31,10 @@ For example:
     ```
 """
 from datetime import datetime
+import json
 
 from sqlalchemy import Column, Table, ForeignKey
-from sqlalchemy import Float, String, UnicodeText, DateTime, Boolean
+from sqlalchemy import Float, String, UnicodeText, DateTime, Boolean, Unicode
 from sqlalchemy.orm import mapper, backref, relation, class_mapper
 
 from foodbornenyc.models.metadata import metadata
@@ -243,3 +244,45 @@ yelp_reviews = Table('yelp_reviews', metadata,
 
 mapper(YelpReview, yelp_reviews)
 documentable(YelpReview, 'document') # adds a .document property to all YelpReviews
+
+class Tweet(object):
+    """ Twitter data model"""
+    created_format = "%a %b %d %H:%M:%S +0000 %Y"
+    # created_format = '%c'
+    def __init__(self,
+                 text=None,
+                 id_str=None,
+                 in_reply_to_status_id_str=None,
+                 in_reply_to_user_id_str=None,
+                 user=None,
+                 lang=None,
+                 created_at=None,
+                 place=None):
+        self.text = text
+        self.id = str(id_str)
+        self.in_reply_to_status_id_str = str(in_reply_to_status_id_str)
+        self.in_reply_to_user_id_str = str(in_reply_to_user_id_str)
+        self.user_id= str(user['id_str'])
+        self.lang = lang
+        self.created_at = datetime.strptime(created_at, self.created_format)
+        self.place= json.dumps(place) if place else None # serialize the dict for now
+        self.document = Document(str(id_str))
+        # TODO: Add TwitterUser class and foreign key to it
+        # TODO: Don't just serialize the place, resolve it to a Location or create one
+
+tweets = Table('tweets', metadata,
+               Column('id', String(64), primary_key=True),
+               Column('doc_assoc_id', None,
+                            ForeignKey('document_associations.assoc_id',
+                                       name='fk_tweet_assoc_id'),
+                            nullable=False),
+               Column('text', UnicodeText),
+               Column('user_id', String(64)),
+               Column('lang', Unicode),
+               Column('in_reply_to_status_id_str', String(64)),
+               Column('in_reply_to_user_id_str', String(64)),
+               Column('created_at', DateTime),
+               Column('place', UnicodeText))
+
+mapper(Tweet, tweets)
+documentable(Tweet, 'document')

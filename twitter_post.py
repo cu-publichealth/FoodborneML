@@ -12,6 +12,7 @@ def post_random_keyword(twitter, terms):
     term_index = randint(0, len(terms)-1)
     tweet_text = "FoodborneNYC Test: %s" % search_terms[term_index]
     twitter.update_status(status=tweet_text)
+    print "Posted this tweet: %s" % tweet_text
 
 
 
@@ -35,7 +36,7 @@ if __name__ == "__main__":
     ]
 
     # post_random_keyword(twitter, search_terms) #test
-    schedule.every(2).hour.at("23:00").do(post_random_keyword(twitter,search_terms))
+    schedule.every().hour.do(post_random_keyword,twitter,search_terms)
 
     # run the continuous program
     while True:

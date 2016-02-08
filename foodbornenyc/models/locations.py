@@ -25,6 +25,7 @@ class Location(object):
                  country=None,
                  postal_code=None,
                  state=None):
+    
         self.latitude = latitude
         self.longitude = longitude
         self.line1 = xstr(line1)
@@ -35,6 +36,7 @@ class Location(object):
         self.postal_code = xstr(postal_code)
         self.state = xstr(state)
         self.street_address = self.address()
+
         # TODO: Add bounding boxes of places where the lat/lon then becomes the center
 
     def address(self):

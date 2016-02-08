@@ -4,6 +4,7 @@ Simple Twitter Search based on keywords once every 5 seconds and save to databas
 import time
 
 from twython import Twython
+from twython.exceptions import TwythonError
 
 from foodbornenyc.models.documents import Tweet
 from foodbornenyc.models.models import get_db_session
@@ -15,9 +16,12 @@ logger = get_logger(__name__, level="INFO")
 
 def make_query(twitter, keywords):
     """ Take keywords and Twython object and return back the statuses"""
-    query = ' OR '.join(keywords)
-    results = twitter.search(q=query)
-    tweets = results['statuses']
+    try:
+        query = ' OR '.join(keywords)
+        results = twitter.search(q=query)
+        tweets = results['statuses']
+    except TwythonError:
+        logger.warning("Twython Error. Skipping this request")
     return tweets
 
 def tweets_to_Tweets(tweet_list, select_fields):

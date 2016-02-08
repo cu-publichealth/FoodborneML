@@ -86,7 +86,7 @@ business_category_table = Table('businesses_categories', metadata,
 mapper(Business, businesses, 
        properties={
            'location': relationship(Location, backref=backref('businesses')),
-           'reviews': relationship(YelpReview, backref=backref('businesses')),
+           'reviews': relationship(YelpReview, backref=backref('business')),
            'categories': relationship(YelpCategory, secondary=business_category_table,
                                       backref="businesses")
        })

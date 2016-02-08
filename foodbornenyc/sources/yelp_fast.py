@@ -69,8 +69,8 @@ def download_url_to_file(url, data_dir, filename):
             progress_size = int(count*block_size)/(1024*1024)
             if count % 100 == 0:
                 # the only place not logging is ok: when doing carriage returns (logging can't)
-                print ("\r Downloading Yelp Data...%.2f%%  %i MB downloaded, %d seconds so far" %
-                       (percent, progress_size, duration),)
+                print "\r Downloading Yelp Data...%.2f%%  %i MB downloaded, %d seconds so far" %\
+                      (percent, progress_size, duration),
 
             # write it out
             handle.write(block)

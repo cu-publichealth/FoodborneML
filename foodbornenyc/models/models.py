@@ -21,12 +21,12 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
 from metadata import metadata
-from foodbornenyc.db_settings import database_config as db_config
+from foodbornenyc.db_settings import database_config as config
 
 from foodbornenyc.util.util import get_logger
 logger = get_logger(__name__)
 
-def get_db_engine(config={}, echo=False, verbose=False):
+def get_db_engine(config=config, echo=False, verbose=False):
     """Take the database settings and construct an engine for the database
 
     Args:
@@ -38,21 +38,23 @@ def get_db_engine(config={}, echo=False, verbose=False):
     Returns:
         engine: The SQLAlchemy engine object.  Used to execute statements or create ORM sessions
     """
-    c = db_config.copy()
-    c.update(config)
+    user = config['user']
+    password = config['password']
+    db_host = config['dbhost']
+    db_backend = config['dbbackend']
 
-    if 'sqlite' in (c['dbbackend']):
-        engine = create_engine('%s:///%s' % (c['dbbackend'], c['dbhost']), echo=echo)
+    if 'sqlite' in db_backend:
+        engine = create_engine('%s:///%s' % (db_backend, db_host), echo=echo)
     else:
-        engine = create_engine('%s://%s:%s@%s?charset=utf8'
-                                % (c['dbbackend'], c['user'], c['password'], c['dbhost']), echo=echo)
+        engine = (create_engine('%s://%s:%s@%s?charset=utf8'
+                                % (db_backend, user, password, db_host), echo=echo))
 
     if verbose:
         logger.info("Engine created for %s::%s", db_host, user)
 
     return engine
 
-def get_db_session(config={}, echo=False, autoflush=True, autocommit=False):
+def get_db_session(config=config, echo=False, autoflush=True, autocommit=False):
     """Create a SQLAlchemy `Session` bound to the engine defined in `get_db_engine`
 
     Args:
@@ -84,7 +86,7 @@ def get_db_session(config={}, echo=False, autoflush=True, autocommit=False):
                         autoflush=autoflush,
                         autocommit=autocommit)()
 
-def setup_db(config={}):
+def setup_db(config=config):
     """Set up all tables in the database, or add tables that don't yet exist.
 
     Reflects all tables that have been registered with the `metadata` object in the `models` module.
@@ -104,7 +106,7 @@ def setup_db(config={}):
         logger.error("Failed to instantieate Database with model schema")
         traceback.print_exc()
 
-def drop_all_tables(config={}):
+def drop_all_tables(config=config):
     """Tear down all data, tables, and the schema.  Very dangerous.
 
     Args:

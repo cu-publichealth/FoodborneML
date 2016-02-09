@@ -21,38 +21,38 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
 from metadata import metadata
-from foodbornenyc.db_settings import database_config as config
+from foodbornenyc.db_settings import database_config as db_config
 
 from foodbornenyc.util.util import get_logger
 logger = get_logger(__name__)
 
-def get_db_engine(echo=False, verbose=False):
+def get_db_engine(config={}, echo=False, verbose=False):
     """Take the database settings and construct an engine for the database
 
     Args:
+        config (dict of str: str): DB connection configuration; any blank setting
+            defaults to db_settings.py settings
         echo (bool): If `True` SQLAlchemy will print all SQL statements to stdout
         verbose (bool): If `True` the logger will notify when the engine is created
 
     Returns:
-        engine: The SQLAlchemy engine object.  Used to executre statements or create ORM sessions
+        engine: The SQLAlchemy engine object.  Used to execute statements or create ORM sessions
     """
-    user = config['user']
-    password = config['password']
-    db_host = config['dbhost']
-    db_backend = config['dbbackend']
+    c = db_config.copy()
+    c.update(config)
 
-    if 'sqlite' in db_backend:
-        engine = create_engine('%s:///%s' % (db_backend, db_host), echo=echo)
+    if 'sqlite' in (c['dbbackend']):
+        engine = create_engine('%s:///%s' % (c['dbbackend'], c['dbhost']), echo=echo)
     else:
-        engine = (create_engine('%s://%s:%s@%s?charset=utf8'
-                                % (db_backend, user, password, db_host), echo=echo))
+        engine = create_engine('%s://%s:%s@%s?charset=utf8'
+                                % (c['dbbackend'], c['user'], c['password'], c['dbhost']), echo=echo)
 
     if verbose:
         logger.info("Engine created for %s::%s", db_host, user)
 
     return engine
 
-def get_db_session(echo=False, autoflush=True, autocommit=False):
+def get_db_session(config={}, echo=False, autoflush=True, autocommit=False):
     """Create a SQLAlchemy `Session` bound to the engine defined in `get_db_engine`
 
     Args:
@@ -80,11 +80,11 @@ def get_db_session(echo=False, autoflush=True, autocommit=False):
             # you can't not commit using the `with` context
         ```
     """
-    return sessionmaker(bind=get_db_engine(echo=echo),
+    return sessionmaker(bind=get_db_engine(config=config, echo=echo),
                         autoflush=autoflush,
                         autocommit=autocommit)()
 
-def setup_db():
+def setup_db(config={}):
     """Set up all tables in the database, or add tables that don't yet exist.
 
     Reflects all tables that have been registered with the `metadata` object in the `models` module.
@@ -95,7 +95,7 @@ def setup_db():
     Returns:
         None
     """
-    engine = get_db_engine(echo=True)
+    engine = get_db_engine(config, echo=True)
     #instantiate the schema
     try:
         metadata.create_all(engine)
@@ -104,7 +104,7 @@ def setup_db():
         logger.error("Failed to instantieate Database with model schema")
         traceback.print_exc()
 
-def drop_all_tables():
+def drop_all_tables(config={}):
     """Tear down all data, tables, and the schema.  Very dangerous.
 
     Args:
@@ -113,7 +113,7 @@ def drop_all_tables():
     Returns:
         None
     """
-    engine = get_db_engine(echo=True)
+    engine = get_db_engine(config, echo=True)
     try:
         metadata.reflect(engine, extend_existing=True)
         metadata.drop_all(engine)

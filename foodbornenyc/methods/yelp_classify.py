@@ -8,6 +8,7 @@ import datetime
 from time import time
 
 from sqlalchemy import func, select
+from sqlalchemy.exc import OperationalError
 from sklearn.externals import joblib
 
 
@@ -99,14 +100,17 @@ class YelpClassify(object):
         offset = 0
         while True:
             returned = False
-            with db.begin():
-                for i, review in enumerate(query.limit(yield_per).offset(offset)):
-                    returned = True
-                    if verbose:
-                        logger.info("Classified Review #%i/%i", offset+i+1, count)
-                    self.score_review(review)
-                offset += yield_per
-                logger.info("Commiting Predictions")
+            try:
+                with db.begin():
+                    for i, review in enumerate(query.limit(yield_per).offset(offset)):
+                        returned = True
+                        if verbose:
+                            logger.info("Classified Review #%i/%i", offset+i+1, count)
+                        self.score_review(review)
+                    logger.info("Commiting Predictions")
+            except OperationalError:
+                continue # if commit error, try again with same offeset
+            offset += yield_per
             if not returned:
                 break
         logger.info("Classified %i reviews in %i:%i:%i (h:m:s)", count, sec_to_hms(time()-start))

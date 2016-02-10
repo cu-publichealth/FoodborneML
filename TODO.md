@@ -13,7 +13,7 @@
 
 ## Twitter
 
-- [ ] `Tweet` document class and schema
+- [x] `Tweet` document class and schema
 - [ ] `TwitterUser` class and schema
 - [ ] Decide how to resolve `Location`s with bounding boxes
     - Possibly change schema to have optional `float` corners

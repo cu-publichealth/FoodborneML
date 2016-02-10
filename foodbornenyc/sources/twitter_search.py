@@ -5,6 +5,7 @@ import time
 
 from twython import Twython
 from twython.exceptions import TwythonError
+from sqlalchemy.exc import OperationalError
 
 from foodbornenyc.models.documents import Tweet
 from foodbornenyc.models.models import get_db_session
@@ -22,6 +23,7 @@ def make_query(twitter, keywords):
         tweets = results['statuses']
     except TwythonError:
         logger.warning("Twython Error. Skipping this request")
+        tweets = []
     return tweets
 
 def tweets_to_Tweets(tweet_list, select_fields):
@@ -93,10 +95,18 @@ def query_twitter(how_long=0):
     # if we don't specify go indefinitely
     while not (how_long) or (time.time()-start < how_long):
         tweets = make_query(twitter, search_terms)
+        if not tweets: # if we dont get anything back, sleep and try again
+            time.sleep(request_wait)
+            continue
         logger.info("%i Total unique tweets in %i:%i:%i time", len(id_set), *sec_to_hms(time.time()-start))
         new_tweets = [ tweet for tweet in tweets if tweet['id_str'] not in id_set ]
         new_Tweets = tweets_to_Tweets(new_tweets, fields)
         id_set |= set([ t.id for t in new_Tweets ]) # union add all new ones
-        db.add_all(new_Tweets)
-        db.commit()
+        try:
+            db.add_all(new_Tweets)
+            db.commit()
+        except OperationalError:
+            pass
         time.sleep(request_wait)
+
+

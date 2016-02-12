@@ -7,3 +7,4 @@
 simple_twitter_stream.py
 setup.py
 foodbornenyc/db_settings.py
+foodbornenyc/my_db_dettings.py

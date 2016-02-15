@@ -39,6 +39,8 @@ def copy_tables():
 
     businesses = db.query(Business).order_by(Business.id)[0:5]
     locations = [b.location for b in businesses]
+    # [b.categories ...] is a list of lists, so we need a little more processing
+    categories = set().union(*[b.categories for b in businesses])
     reviews = []
     for b in businesses:
         reviews.extend(
@@ -47,7 +49,7 @@ def copy_tables():
     documents = [r.document for r in reviews]
     doc_assoc = [r.document_rel for r in reviews]
 
-    tables = [businesses, locations, reviews, documents, doc_assoc]
+    tables = [businesses, locations, categories, reviews, documents, doc_assoc]
 
     # detach all objects from db session before putting them in toy
     for t in tables:
@@ -57,19 +59,3 @@ def copy_tables():
     for t in tables: toy.add_all(t)
 
     toy.commit()
-
-def read_tables():
-    toy = models.get_db_session(test_config)
-    m = MetaData()
-    m.reflect(models.get_db_engine(test_config))
-    for table in m.tables.values():
-        print("----- %s -----" % table.name)
-
-        for column in table.c:
-            print(column.name)
-
-    for b in toy.query(Business):
-        print(b)
-        print(b.location)
-        # for r in toy.query(YelpReview).filter(YelpReview.business_id == b.id):
-         #   print r

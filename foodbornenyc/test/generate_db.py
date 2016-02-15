@@ -7,7 +7,7 @@ from sqlalchemy.sql.expression import text
 from sqlalchemy import MetaData
 
 import foodbornenyc.models.models as models
-from foodbornenyc.models.businesses import Business
+from foodbornenyc.models.businesses import Business, business_category_table
 from foodbornenyc.models.documents import YelpReview, Document, documents
 from foodbornenyc.models.locations import Location
 
@@ -41,6 +41,7 @@ def copy_tables():
     locations = [b.location for b in businesses]
     # [b.categories ...] is a list of lists, so we need a little more processing
     categories = set().union(*[b.categories for b in businesses])
+
     reviews = []
     for b in businesses:
         reviews.extend(
@@ -55,7 +56,17 @@ def copy_tables():
     for t in tables:
         for obj in t: make_transient(obj)
 
-    # we have to make everything transient before adding anything
+    # only after *everything* is transient do we add anything
     for t in tables: toy.add_all(t)
+
+    # in addition we add the junction table for business categories
+    b_ids = [b.id for b in businesses]
+    business_cat = db.execute(business_category_table.select().
+            where(business_category_table.c.business_id.in_(
+                [b.id for b in businesses]
+            )))
+
+    for row in business_cat:
+        toy.execute(business_category_table.insert(), row)
 
     toy.commit()

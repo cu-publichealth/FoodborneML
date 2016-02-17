@@ -21,10 +21,14 @@ test_config = {
     'dbbackend':'sqlite'
 }
 
-# do NOT call this before copy_tables() in the same session. you will get a
+# to generate the test db, call reset_test_db(), then -close- the python
+# session, then call copy_tables().
+#
+# do NOT call this before copy_tables() -in the same session-. you will get a
 # mapper error. it seems like the Metadata object that controls table relations
 # is persisted even across different engines, so dropping tables in the test db
 # messes up calls to the regular db.
+#
 def reset_test_db():
     logger.info("Resetting all tables in %s", test_config['dbhost'])
     models.drop_all_tables(test_config)

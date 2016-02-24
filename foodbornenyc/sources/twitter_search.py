@@ -31,6 +31,7 @@ def tweets_to_Tweets(tweet_list, select_fields):
     tweets = []
 #     print select_fields
     for tweet in tweet_list:
+        tweets['text'] = xuni(tweets['text']) # convert to unicode for emoji
         info = {k:v for (k,v) in tweet.items() if k in select_fields}
         tweets.append(Tweet(**info))
     return tweets

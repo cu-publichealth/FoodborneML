@@ -10,4 +10,5 @@ schedule==0.3.2
 scikit-learn==0.17
 six==1.10.0
 SQLAlchemy==1.0.9
+twython=3.3.0
 wheel==0.24.0

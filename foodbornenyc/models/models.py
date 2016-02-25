@@ -55,7 +55,7 @@ def get_db_engine(config=config, echo=False, verbose=False):
 
     return engine
 
-def get_db_session(config=config, echo=False, autoflush=True, autocommit=False):
+def get_db_session(dbconfig=config, echo=False, autoflush=True, autocommit=False):
     """Create a SQLAlchemy `Session` bound to the engine defined in `get_db_engine`
 
     Args:
@@ -83,7 +83,7 @@ def get_db_session(config=config, echo=False, autoflush=True, autocommit=False):
             # you can't not commit using the `with` context
         ```
     """
-    return sessionmaker(bind=get_db_engine(config=config, echo=echo),
+    return sessionmaker(bind=get_db_engine(config=dbconfig, echo=echo),
                         autoflush=autoflush,
                         autocommit=autocommit)()
 

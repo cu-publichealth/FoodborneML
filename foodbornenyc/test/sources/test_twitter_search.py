@@ -1,5 +1,5 @@
 import unittest
-from mock import Mock, patch
+from mock import Mock
 
 import foodbornenyc.sources.twitter_search as twitter_search
 from twython.exceptions import TwythonError
@@ -19,7 +19,7 @@ class TestTwitterSource(unittest.TestCase):
     twitter.search.assert_called_with(q='food OR stomach OR disease')
     self.assertEqual(query, statuses)
 
-  def test_make_query_failed(self, logger):
+  def test_make_query_failed(self):
     twitter = Mock()
     twitter.search = Mock(side_effect=TwythonError("Can't reach Twitter"))
 

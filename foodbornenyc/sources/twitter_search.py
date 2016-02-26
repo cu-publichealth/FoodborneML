@@ -12,7 +12,7 @@ from foodbornenyc.models.models import get_db_session
 
 from foodbornenyc.db_settings import twitter_config
 
-from foodbornenyc.util.util import sec_to_hms, get_logger
+from foodbornenyc.util.util import sec_to_hms, get_logger, xuni
 logger = get_logger(__name__, level="INFO")
 
 def make_query(twitter, keywords):
@@ -31,7 +31,7 @@ def tweets_to_Tweets(tweet_list, select_fields):
     tweets = []
 #     print select_fields
     for tweet in tweet_list:
-        tweets['text'] = xuni(tweets['text']) # convert to unicode for emoji
+        tweet['text'] = xuni(tweet['text']) # convert to unicode for emoji
         info = {k:v for (k,v) in tweet.items() if k in select_fields}
         tweets.append(Tweet(**info))
     return tweets

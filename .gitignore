@@ -4,4 +4,5 @@
 *.json.gz
 *.npy
 *ipynb_checkpoints*
+.cache/
 foodbornenyc/my_db_settings.py

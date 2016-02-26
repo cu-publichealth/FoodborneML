@@ -101,7 +101,7 @@ def query_twitter(how_long=0):
             continue
         logger.info("%i Total unique tweets in %i:%i:%i time", len(id_set),\
                     *sec_to_hms(time.time()-start))
-        new_tweets = [ t for t in tweets if tweet['id_str'] not in id_set ]
+        new_tweets = [ t for t in tweets if t['id_str'] not in id_set ]
         new_Tweets = tweets_to_Tweets(new_tweets, fields)
         id_set |= set([ t.id for t in new_Tweets ]) # union add all new ones
         try:

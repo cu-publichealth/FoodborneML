@@ -78,8 +78,8 @@ fields = [
          ]
 
 def query_twitter(how_long=0):
-    """ Inteface function """
-    # the authorization credentials are stored in db settings, which isn't updated to gihub
+    """ Interface function """
+    # the credentials are stored in db settings, which isn't updated to github
     twitter = Twython(twitter_config['consumer_key'],
                       twitter_config['consumer_secret'],
                       twitter_config['access_token'],
@@ -99,8 +99,9 @@ def query_twitter(how_long=0):
         if not tweets: # if we dont get anything back, sleep and try again
             time.sleep(request_wait)
             continue
-        logger.info("%i Total unique tweets in %i:%i:%i time", len(id_set), *sec_to_hms(time.time()-start))
-        new_tweets = [ tweet for tweet in tweets if tweet['id_str'] not in id_set ]
+        logger.info("%i Total unique tweets in %i:%i:%i time", len(id_set),\
+                    *sec_to_hms(time.time()-start))
+        new_tweets = [ t for t in tweets if tweet['id_str'] not in id_set ]
         new_Tweets = tweets_to_Tweets(new_tweets, fields)
         id_set |= set([ t.id for t in new_Tweets ]) # union add all new ones
         try:

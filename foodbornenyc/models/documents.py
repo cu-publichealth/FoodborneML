@@ -262,10 +262,13 @@ class Tweet(object):
         self.id = str(id_str)
         self.in_reply_to_status_id_str = str(in_reply_to_status_id_str)
         self.in_reply_to_user_id_str = str(in_reply_to_user_id_str)
-        self.user_id= str(user['id_str'])
+        self.user_id= str(user['id_str']) if user else None
         self.lang = lang
-        self.created_at = datetime.strptime(created_at, self.created_format)
-        self.place= json.dumps(place) if place else None # serialize the dict for now
+        if created_at:
+            self.created_at = datetime.strptime(created_at, self.created_format)
+        else: self.created_at = None
+        # serialize the dict for now
+        self.place= json.dumps(place) if place else None
         self.document = Document(str(id_str))
         # TODO: Add TwitterUser class and foreign key to it
         # TODO: Don't just serialize the place, resolve it to a Location or create one

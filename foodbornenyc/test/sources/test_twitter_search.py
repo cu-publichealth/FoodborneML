@@ -5,7 +5,7 @@ import foodbornenyc.sources.twitter_search as twitter_search
 
 from foodbornenyc.models.documents import Tweet
 from foodbornenyc.models.models import get_db_session
-from foodbornenyc.test.generate_db import clear_tables
+from foodbornenyc.test.generate_test_db import clear_tables
 from twython.exceptions import TwythonError
 
 sample = [ {

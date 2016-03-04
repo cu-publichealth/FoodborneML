@@ -10,7 +10,6 @@ from time import time
 from sqlalchemy import func, select
 from sqlalchemy.exc import OperationalError
 from sklearn.externals import joblib
-import pickle
 
 
 from foodbornenyc.settings import yelp_classify_config as config
@@ -36,9 +35,9 @@ class YelpClassify(object):
 
         """
         if sick_path:
-            self.sick = pickle.load(open(sick_path, 'r'))
+            self.sick = joblib.load(sick_path)
         else:
-            self.sick = pickle.load(open(config['model_file'], 'r'))
+            self.sick = joblib.load(config['model_file'])
 
     def score_review(self, review):
         """ Take a YelpReview object and use `sick` to get the class probability,
@@ -49,7 +48,7 @@ class YelpClassify(object):
     #TODO: Classifying reviews this way happens quite slowly. We should consider also adding this
     # functionality to `yelp_fast` so we don't need so manny transactions.
     # or we should at least try to optimize this strategy (possibly both)
-    def classify_reviews(self, dbconfig=None, every=False, unseen=False, since=30, yield_per=1000, verbose=0):
+    def classify_reviews(self, every=False, unseen=False, since=30, yield_per=1000, verbose=0):
         """Classify some set of `YelpReview`s' `Docuement` in the database
 
         Args:
@@ -69,7 +68,7 @@ class YelpClassify(object):
 
         """
         echo = True if verbose >= 2 else False
-        db = get_db_session(dbconfig=dbconfig, echo=echo, autoflush=False, autocommit=True) if dbconfig else get_db_session(echo=echo, autoflush=False, autocommit=True)
+        db = get_db_session(echo=echo, autoflush=False, autocommit=True)
         with db.begin():
             if every:
                 logger.info("Classifying all reviews. This could take a very long time")
@@ -104,7 +103,7 @@ class YelpClassify(object):
             returned = False
             try:
                 with db.begin():
-                    for i, review in enumerate(query[:]):
+                    for i, review in enumerate(query.limit(yield_per).offset(offset)):
                         returned = True
                         if verbose:
                             logger.info("Classified Review #%i/%i", offset+i+1, count)

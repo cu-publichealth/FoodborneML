@@ -11,6 +11,12 @@ from foodbornenyc.models.documents import YelpReview, Tweet, Document
 from foodbornenyc.models.locations import Location
 from foodbornenyc.models.metadata import metadata
 
+import click
+
+@click.group()
+def main():
+    pass
+
 from foodbornenyc.util.util import sec_to_hms, get_logger
 logger = get_logger(__name__, level="INFO")
 
@@ -21,6 +27,7 @@ test_config = {
     'dbbackend':'sqlite'
 }
 
+@main.command()
 def reset_test_db():
     """ Drops all tables and recreates them. To be done once per schema change
     to update toy.db. """
@@ -28,6 +35,7 @@ def reset_test_db():
     models.drop_all_tables(test_config)
     models.setup_db(test_config)
 
+@main.command()
 def clear_tables():
     """ Clears the tables without dropping them. For use in test setup. """
     import contextlib
@@ -37,7 +45,7 @@ def clear_tables():
             con.execute(table.delete())
         trans.commit()
 
-
+@main.command()
 def copy_tables():
     """ Copies a few items from each table into a test database
 
@@ -86,3 +94,6 @@ def copy_tables():
         toy.execute(business_category_table.insert(), row)
 
     toy.commit()
+
+if __name__ == "__main__":
+    main()

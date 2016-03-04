@@ -17,6 +17,7 @@ from foodbornenyc.settings import yelp_classify_config as config
 
 from foodbornenyc.models.models import get_db_session
 from foodbornenyc.models.documents import YelpReview, documents
+#import foodbornenyc.models.businesses
 
 from foodbornenyc.util.util import get_logger, sec_to_hms
 logger = get_logger(__name__)
@@ -114,6 +115,4 @@ class YelpClassify(object):
             offset += yield_per
             if not returned:
                 break
-        logger.info("Classified %i reviews in %i:%i:%i (h:m:s)", count, sec_to_hms(time()-start))
-
-
+        logger.info("Classified %i reviews in %i:%i:%i (h:m:s)", count, *sec_to_hms(time()-start))

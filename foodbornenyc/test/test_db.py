@@ -21,6 +21,9 @@ test_config = {
     'dbbackend':'sqlite'
 }
 
+def get_db_session():
+    return models.get_db_session(test_config)
+
 def reset_test_db():
     """ Drops all tables and recreates them. To be done once per schema change
     to update toy.db. """
@@ -45,7 +48,7 @@ def copy_tables():
     a mapper error for some reason. Instead, call reset_test_db(), then close
     the python session, then, in a new session, call copy_tables(), to update
     the tables for a schema change. """
-    toy = models.get_db_session(test_config)
+    toy = get_db_session()
     db = models.get_db_session()
 
     logger.info("Populating test tables")

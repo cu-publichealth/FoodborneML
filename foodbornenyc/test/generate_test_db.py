@@ -4,12 +4,12 @@ Generates a small test DB by recreating the tables and copying over a few entrie
 from sqlalchemy.orm.session import make_transient, make_transient_to_detached
 from sqlalchemy.orm import joinedload
 from sqlalchemy.sql.expression import text
-from sqlalchemy import MetaData
 
 import foodbornenyc.models.models as models
 from foodbornenyc.models.businesses import Business, business_category_table
-from foodbornenyc.models.documents import YelpReview, Document, documents
+from foodbornenyc.models.documents import YelpReview, Tweet, Document
 from foodbornenyc.models.locations import Location
+from foodbornenyc.models.metadata import metadata
 
 from foodbornenyc.util.util import sec_to_hms, get_logger
 logger = get_logger(__name__, level="INFO")
@@ -21,21 +21,30 @@ test_config = {
     'dbbackend':'sqlite'
 }
 
-# to generate the test db, call reset_test_db(), then -close- the python
-# session, then call copy_tables().
-#
-# do NOT call this before copy_tables() -in the same session-. you will get a
-# mapper error. it seems like the Metadata object that controls table relations
-# is persisted even across different engines, so dropping tables in the test db
-# messes up calls to the regular db.
-#
 def reset_test_db():
+    """ Drops all tables and recreates them. To be done once per schema change
+    to update toy.db. """
     logger.info("Resetting all tables in %s", test_config['dbhost'])
     models.drop_all_tables(test_config)
     models.setup_db(test_config)
 
+def clear_tables():
+    """ Clears the tables without dropping them. For use in test setup. """
+    import contextlib
+    with contextlib.closing(models.get_db_engine(test_config).connect()) as con:
+        trans = con.begin()
+        for table in reversed(metadata.sorted_tables):
+            con.execute(table.delete())
+        trans.commit()
+
 
 def copy_tables():
+    """ Copies a few items from each table into a test database
+
+    Should not be called in the same session after reset_test_db(); you will get
+    a mapper error for some reason. Instead, call reset_test_db(), then close
+    the python session, then, in a new session, call copy_tables(), to update
+    the tables for a schema change. """
     toy = models.get_db_session(test_config)
     db = models.get_db_session()
 
@@ -46,15 +55,18 @@ def copy_tables():
     # [b.categories ...] is a list of lists, so we need a little more processing
     categories = set().union(*[b.categories for b in businesses])
 
+    tweets = db.query(Tweet).order_by(Tweet.id)[0:5]
     reviews = []
     for b in businesses:
         reviews.extend(
             db.query(YelpReview).filter(YelpReview.business_id == b.id)[0:5]
         )
-    documents = [r.document for r in reviews]
-    doc_assoc = [r.document_rel for r in reviews]
+    documents = [r.document for r in reviews] + [t.document for t in tweets]
+    doc_assoc = [r.document_rel for r in reviews] + \
+                [t.document_rel for t in tweets]
 
-    tables = [businesses, locations, categories, reviews, documents, doc_assoc]
+    tables = [businesses, locations, categories, reviews, tweets, \
+              documents, doc_assoc]
 
     # detach all objects from db session before putting them in toy
     for t in tables:

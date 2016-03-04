@@ -12,7 +12,7 @@ from foodbornenyc.models.models import get_db_session
 
 from foodbornenyc.db_settings import twitter_config
 
-from foodbornenyc.util.util import sec_to_hms, get_logger
+from foodbornenyc.util.util import sec_to_hms, get_logger, xuni
 logger = get_logger(__name__, level="INFO")
 
 def make_query(twitter, keywords):
@@ -31,6 +31,7 @@ def tweets_to_Tweets(tweet_list, select_fields):
     tweets = []
 #     print select_fields
     for tweet in tweet_list:
+        tweet['text'] = xuni(tweet['text']) # convert to unicode for emoji
         info = {k:v for (k,v) in tweet.items() if k in select_fields}
         tweets.append(Tweet(**info))
     return tweets
@@ -77,8 +78,8 @@ fields = [
          ]
 
 def query_twitter(how_long=0):
-    """ Inteface function """
-    # the authorization credentials are stored in db settings, which isn't updated to gihub
+    """ Interface function """
+    # the credentials are stored in db settings, which isn't updated to github
     twitter = Twython(twitter_config['consumer_key'],
                       twitter_config['consumer_secret'],
                       twitter_config['access_token'],
@@ -98,8 +99,9 @@ def query_twitter(how_long=0):
         if not tweets: # if we dont get anything back, sleep and try again
             time.sleep(request_wait)
             continue
-        logger.info("%i Total unique tweets in %i:%i:%i time", len(id_set), *sec_to_hms(time.time()-start))
-        new_tweets = [ tweet for tweet in tweets if tweet['id_str'] not in id_set ]
+        logger.info("%i Total unique tweets in %i:%i:%i time", len(id_set),
+                    *sec_to_hms(time.time()-start))
+        new_tweets = [ t for t in tweets if t['id_str'] not in id_set ]
         new_Tweets = tweets_to_Tweets(new_tweets, fields)
         id_set |= set([ t.id for t in new_Tweets ]) # union add all new ones
         try:

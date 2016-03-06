@@ -30,6 +30,7 @@ test_config = {
 def get_db_session():
     return models.get_db_session(test_config)
 
+@main.command()
 def reset_test_db():
     """ Drops all tables and recreates them. To be done once per schema change
     to update toy.db. """

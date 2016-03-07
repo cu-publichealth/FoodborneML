@@ -4,6 +4,7 @@
 *.json.gz
 *.npy
 *ipynb_checkpoints*
+*.DS_Store
 simple_twitter_stream.py
 setup.py
 foodbornenyc/db_settings.py

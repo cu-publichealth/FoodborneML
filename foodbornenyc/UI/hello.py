@@ -35,42 +35,41 @@ def hello():
 
 @app.route('/yelp/')
 def yelp():
-        echo = False
-        db = get_db_session(echo=echo, autoflush=False, autocommit=True)
-        count = 0
-        with db.begin():
-                high_scores = select([documents.c.id]).where(documents.c.fp_pred > .5)
-                
-                query = (db.query(YelpReview).filter(YelpReview.id.in_(high_scores)).order_by(YelpReview.id.asc()))
-                count = (db.execute(select([func.count(documents.c.id)]).where(documents.c.fp_pred > .5)).scalar())
-                print count
-        offset = 0
-        reviews = []
-        while True:
-                returned = False
-                try:
-                        with db.begin():
-                                for i, review in enumerate(query.limit(100).offset(offset)):
-                                        returned = True
-                                        
-                                        business_query = db.query(Business).filter(Business.id.in_(select([businesses.c.id]).where(businesses.c.id == review.business_id)))
-                                        for j, business in enumerate(business_query.limit(1).offset(0)):
-                                            businessName= business.name
-                                            reviews.append(Review(businessName, review.text, review.document.fp_pred))
-                except OperationalError:
-                        continue
-                offset += 100
-                if not returned:
-                        break
-        reviews = sorted(reviews, key=attrgetter('score'), reverse=True) 
-        
-        table = ReviewTable(reviews)
-        return render_template('yelp_table.html', table=table)
-        
-@app.route('/<name>')
-def hello_name(name):
-        return "Hello {}!".format(name)
+    echo = False
+    db = get_db_session(echo=echo, autoflush=False, autocommit=True)
+    count = 0
+    ## Construct query to get all positive reviews
+    with db.begin():
+        high_scores = select([documents.c.id]).where(documents.c.fp_pred > .5)     
+        query = (db.query(YelpReview).filter(YelpReview.id.in_(high_scores)).order_by(YelpReview.id.asc()))
+        ## Line below gets count of reviews meeting criteria
+        ## count = (db.execute(select([func.count(documents.c.id)]).where(documents.c.fp_pred > .5)).scalar())
 
+    offset = 0
+    reviews = []
+    ## Collect all reviews meeting query criteria
+    while True:
+        returned = False
+        try:
+            with db.begin():
+                for i, review in enumerate(query.limit(100).offset(offset)):
+                    returned = True
+                            
+                    business_query = db.query(Business).filter(Business.id.in_(select([businesses.c.id]).where(
+                            businesses.c.id == review.business_id)))
+                    for j, business in enumerate(business_query.limit(1).offset(0)):
+                        businessName= business.name
+                        reviews.append(Review(businessName, review.text, review.document.fp_pred))
+        except OperationalError:
+            continue
+        offset += 100
+        if not returned:
+            break
+
+    ## Sort reviews and render table
+    reviews = sorted(reviews, key=attrgetter('score'), reverse=True)     
+    table = ReviewTable(reviews)
+    return render_template('yelp_table.html', table=table)
 
 if __name__ == "__main__":
         app.run()

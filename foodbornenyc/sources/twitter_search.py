@@ -1,7 +1,7 @@
 """
 Simple Twitter Search based on keywords once every 5 seconds and save to database
 """
-import time
+from time import time, sleep
 
 from twython import Twython
 from twython.exceptions import TwythonError
@@ -77,7 +77,7 @@ fields = [
 #         'metadata', #<type 'dict'>
          ]
 
-def query_twitter(how_long=0):
+def query_twitter(how_long=0, interval=5):
     """ Interface function """
     # the credentials are stored in db settings, which isn't updated to github
     twitter = Twython(twitter_config['consumer_key'],
@@ -87,20 +87,19 @@ def query_twitter(how_long=0):
     db = get_db_session()
 
     # can send 180 requests per 15 min = 5 sec
-    request_wait = 5
-    start = time.time()
+    start = time()
 
     # make sure we don't create duplicates. 
     # keeping track of this ourselves saves many db hits
     id_set = set([ t.id for t in db.query(Tweet.id).all() ])
     # if we don't specify go indefinitely
-    while not (how_long) or (time.time()-start < how_long):
+    while time() - start < how_long:
         tweets = make_query(twitter, search_terms)
         if not tweets: # if we dont get anything back, sleep and try again
-            time.sleep(request_wait)
+            sleep(interval)
             continue
-        logger.info("%i Total unique tweets in %i:%i:%i time", len(id_set),
-                    *sec_to_hms(time.time()-start))
+        #logger.info("%i Total unique tweets in %i:%i:%i time", len(id_set),
+        #            *sec_to_hms(time()-start))
         new_tweets = [ t for t in tweets if t['id_str'] not in id_set ]
         new_Tweets = tweets_to_Tweets(new_tweets, fields)
         id_set |= set([ t.id for t in new_Tweets ]) # union add all new ones
@@ -109,6 +108,5 @@ def query_twitter(how_long=0):
             db.commit()
         except OperationalError:
             pass
-        time.sleep(request_wait)
-
+        sleep(interval)
 

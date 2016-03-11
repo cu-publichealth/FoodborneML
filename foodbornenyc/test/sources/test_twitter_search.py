@@ -63,7 +63,7 @@ def test_make_query_failed():
 
 def test_tweets_to_Tweets():
     """ Sample tweets should be converted properly """
-    fields = ['text', 'id_str', 'place']
+    fields = ['text', 'id_str']
     tweets = twitter_search.tweets_to_Tweets(sample, fields)
     assert_matching_tweets(tweets)
 

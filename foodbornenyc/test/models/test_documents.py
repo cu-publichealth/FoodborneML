@@ -54,7 +54,7 @@ def testTweet(db):
                'in_reply_to_user_id_str': '233', 'lang': 'en',
                'in_reply_to_status_id_str': '449' }
     sample_optional = { 'user': {'id_str': '234'},
-                        'place': Location(place_id='12345', city='Boston'),
+                        'location': Location(place_id='12345', city='Boston'),
                         'created_at': 'Tue Feb 23 23:40:54 +0000 2015' }
 
     sample2 = sample.copy()
@@ -81,12 +81,9 @@ def testTweet(db):
     db.commit()
 
     tweet = db.query(Tweet).first()
-    assert tweet.location == sample2['place']
+    assert tweet.location == sample2['location']
     assert tweet.user_id == sample2['user']['id_str']
 
     # test document
     assert tweet.document_rel.assoc_id == sample['id_str']
     assert tweet.document.id == tweet.document_rel.document[0].id
-
-# TODO: test for when a yelp review and a tweet have the same id. do documents
-# still work?

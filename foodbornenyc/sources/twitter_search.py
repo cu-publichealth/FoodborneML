@@ -32,11 +32,10 @@ def tweets_to_Tweets(tweet_list, select_fields):
     tweets = []
 #     print select_fields
     for tweet in tweet_list:
-        t = tweet.copy()
-        t['text'] = xuni(t['text']) # convert to unicode for emoji
-        t['place'] = location_from_place(t['place'])
-        info = {k:v for (k,v) in t.items() if k in select_fields}
-        print info['place']
+        info = {k:v for (k,v) in tweet.items() if k in select_fields}
+        info['text'] = xuni(tweet['text']) # convert to unicode for emoji
+        # use 'location' instead of 'place' to match Tweet model
+        info['location'] = location_from_place(tweet['place'])
         tweets.append(Tweet(**info))
     return tweets
 
@@ -75,7 +74,7 @@ search_terms = [
     '"the runs"'
 ]
 
-# all possible fields from twitter
+# all possible fields from twitter that we want to import directly
 fields = [
 #         'contributors', #<type 'NoneType'>
 #         'truncated', #<type 'bool'>
@@ -100,7 +99,7 @@ fields = [
         'lang', #<type 'unicode'>
         'created_at', #<type 'unicode'>
         'in_reply_to_status_id_str', #<type 'NoneType'>
-        'place', #<type 'NoneType'>
+#         'place', #<type 'NoneType'>
 #         'metadata', #<type 'dict'>
          ]
 

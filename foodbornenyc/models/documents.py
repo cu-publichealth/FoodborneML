@@ -268,7 +268,7 @@ class Tweet(object):
                  user=None,
                  lang=None,
                  created_at=None,
-                 place=None):
+                 location=None):
         self.text = text
         self.id = str(id_str)
         self.in_reply_to_status_id_str = str(in_reply_to_status_id_str)
@@ -278,7 +278,7 @@ class Tweet(object):
         if created_at:
             self.created_at = datetime.strptime(created_at, self.created_format)
         else: self.created_at = None
-        self.location = place
+        self.location = location
         self.document = Document(str(id_str))
         # TODO: Add TwitterUser class and foreign key to it
 

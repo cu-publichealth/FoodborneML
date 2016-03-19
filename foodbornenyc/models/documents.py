@@ -8,17 +8,18 @@ Contains document models:
 This inheritance pattern is closely modeled from Source:
 http://techspot.zzzeek.org/2007/05/29/polymorphic-associations-with-sqlalchemy/
 
-Document is a polymorphic parent of specific document types.
-It contains all of things we care about at document level, like labels and predictions
+Document is a polymorphic parent of specific document types. It contains all of
+the things we care about at document level, like labels and predictions
 
-The children instantiate specific instances of document types, like YelpReview or Tweet
+The children instantiate specific instances of document types,
+e.g. YelpReview or Tweet
 
-Generally avoid messing with the `document_associations` table, the `DocumentAssoc` class,
-and the `documentable` function
+Generally avoid messing with the `document_associations` table, the
+`DocumentAssoc` class, and the `documentable` function
 
-When creating a new type of document, just create the class, table, and mapper as usual,
-but then add `documentable(DocSubClass, 'document')`
-and the appropriate association with correct integrity constraints will be created.
+When creating a new type of document, just create the class, table, and mapper
+as usual, but then add `documentable(DocSubClass, 'document')` and the
+appropriate association with correct integrity constraints will be created.
 Minimal extra code.
 
 For example:
@@ -44,7 +45,8 @@ logger = get_logger(__name__)
 
 
 class DocumentAssoc(object):
-    """The DocumentAssoc data model. Allows for polymorphic joined table inheritance"""
+    """The DocumentAssoc data model. Allows for polymorphic joined table
+    inheritance"""
     def __init__(self, assoc_id, name):
         self.assoc_id = assoc_id
         self.type = name
@@ -54,23 +56,25 @@ document_associations = Table('document_associations', metadata,
                               Column('type', String(50), nullable=False))
 
 def documentable(cls, name):
-    """documentable 'interface'. Allows any document subtype have a `document` attribute
+    """documentable 'interface'. Allows any document subtype have a `document`
+    attribute
 
-    To make a class that should be associated with a generic `Document` object have the attribute,
-    simply apply this function to that class.
+    To make a class that should be associated with a generic `Document` object
+    have the attribute, simply apply this function to that class.
 
-    eg, `documentable(YelpReview, 'document')` will endow
-    YelpReview objects with a `document` association through joined table inheritance
+    eg, `documentable(YelpReview, 'document')` will endow YelpReview objects
+    with a `document` association through joined table inheritance
 
-    Additionally, the polymorphic subinstance of any document can be accessed with
-    `document.source`
+    Additionally, the polymorphic subinstance of any document can be accessed
+    with `document.source`
     """
     cls_mapper = class_mapper(cls)
     table = cls_mapper.local_table
     cls_mapper.add_property('document_rel',
                             relation(DocumentAssoc,
-                                     backref=backref('_backref_%s' % table.name,
+                                     backref=backref('_backref_%s'%table.name,
                                                      uselist=False),
+                                     cascade="save-update, merge, delete",
                                      lazy="joined"))
 
     # scalar based property decorator
@@ -85,7 +89,7 @@ def documentable(cls, name):
     setattr(cls, name, property(getter, setter))
 
 class Document(object):
-    """Generic Document data model.  Stores fields common between document types
+    """Generic Document data model. Stores fields common between document types
 
     This allows for different document types to also have Document objects
     that store the common information relevant to any document type.
@@ -94,7 +98,7 @@ class Document(object):
     """
     # polymorphic reference to the associated subtype object
     source = property(lambda self: getattr(self.association,
-                                           '_backref_%s' % self.association.type))
+                                        '_backref_%s' % self.association.type))
 
     def __init__(self, doc_id):
         self.id = doc_id # the id of the referencing document
@@ -131,7 +135,8 @@ class Document(object):
         setattr(self, varname, varval)
 
     def datetime_setter(self, varname, varval):
-        """The setter makes sure that `varname`'s associated timestamp also gets updated"""
+        """The setter makes sure that `varname`'s associated timestamp also
+        gets updated"""
         self.empty_setter(varname, varval)
         vartime = varname + '_time'
         setattr(self, vartime, datetime.now())
@@ -141,11 +146,12 @@ class Document(object):
         return getattr(self, varname)
 
     def getset(varname, getter, setter):
-        """Take arbitrary private varname, getter and setter functions and apply them to varname"""
+        """Take arbitrary private varname, getter and setter functions and
+        apply them to varname"""
         return property(lambda self: getter(self, varname),
                         lambda self, varval: setter(self, varname, varval))
 
-    # make property wrapped public variables for both the labels, predictions and times
+    # make property wrapped public variables for the labels, predictions, times
     fp_label = getset("__fp_label", empty_getter, datetime_setter)
     mult_label = getset("__mult_label", empty_getter, datetime_setter)
     inc_label = getset("__inc_label", empty_getter, datetime_setter)
@@ -188,7 +194,8 @@ documents = Table("documents", metadata,
 
 mapper(Document, documents,
        properties={
-           # map private variable names to more reasable column names (drop the '__')
+           # map private variable names to more reasable column names
+           # (drop the '__')
            '__fp_label':documents.c.fp_label,
            '__mult_label':documents.c.mult_label,
            '__inc_label':documents.c.inc_label,
@@ -205,7 +212,10 @@ mapper(Document, documents,
 
 mapper(DocumentAssoc, document_associations,
        properties={
-           'document':relation(Document, backref='association', lazy='joined')
+           'document':relation(Document,
+                               backref='association',
+                               cascade="save-update, merge, delete",
+                               lazy='joined')
        })
 
 ##############################
@@ -219,8 +229,8 @@ class YelpReview(object):
         self.text = text
         self.user_name = user_name
         self.created = datetime.now()
-        self.document = Document(yelp_id) # not sure if this jives with the polymorphic property
-        # TODO: write test for automatic doc creation
+        self.document = Document(yelp_id) # not sure if this jives with the
+        # polymorphic property
 
     def __repr__(self):
         return "<YelpReview: %r>" % self.text
@@ -243,7 +253,7 @@ yelp_reviews = Table('yelp_reviews', metadata,
                             nullable=False))
 
 mapper(YelpReview, yelp_reviews)
-documentable(YelpReview, 'document') # adds a .document property to all YelpReviews
+documentable(YelpReview, 'document')
 
 class Tweet(object):
     """ Twitter data model"""
@@ -262,13 +272,16 @@ class Tweet(object):
         self.id = str(id_str)
         self.in_reply_to_status_id_str = str(in_reply_to_status_id_str)
         self.in_reply_to_user_id_str = str(in_reply_to_user_id_str)
-        self.user_id= str(user['id_str'])
+        self.user_id= str(user['id_str']) if user else None
         self.lang = lang
-        self.created_at = datetime.strptime(created_at, self.created_format)
-        self.place= json.dumps(place) if place else None # serialize the dict for now
+        if created_at:
+            self.created_at = datetime.strptime(created_at, self.created_format)
+        else: self.created_at = None
+        # serialize the dict for now
+        self.place= json.dumps(place) if place else None
         self.document = Document(str(id_str))
         # TODO: Add TwitterUser class and foreign key to it
-        # TODO: Don't just serialize the place, resolve it to a Location or create one
+        # TODO: Don't serialize the place, resolve it to a Location/create one
 
 tweets = Table('tweets', metadata,
                Column('id', String(64), primary_key=True),

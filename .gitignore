@@ -1,5 +1,4 @@
 *.pyc
-*.csv
 *.json
 *.json.gz
 *.npy
@@ -8,3 +7,5 @@
 simple_twitter_stream.py
 setup.py
 foodbornenyc/db_settings.py
+.cache/
+foodbornenyc/my_db_settings.py

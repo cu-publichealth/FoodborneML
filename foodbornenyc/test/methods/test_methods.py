@@ -1,5 +1,5 @@
 from foodbornenyc.methods.yelp_classify import *
-from foodbornenyc.test.generate_test_db import *
+from foodbornenyc.test.test_db import *
 
 import pytest
 

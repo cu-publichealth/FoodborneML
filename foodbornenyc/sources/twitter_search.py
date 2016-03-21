@@ -8,6 +8,7 @@ from twython.exceptions import TwythonError
 from sqlalchemy.exc import OperationalError
 
 from foodbornenyc.models.documents import Tweet
+from foodbornenyc.models.locations import Location
 from foodbornenyc.models.models import get_db_session
 
 from foodbornenyc.db_settings import twitter_config
@@ -31,10 +32,35 @@ def tweets_to_Tweets(tweet_list, select_fields):
     tweets = []
 #     print select_fields
     for tweet in tweet_list:
-        tweet['text'] = xuni(tweet['text']) # convert to unicode for emoji
         info = {k:v for (k,v) in tweet.items() if k in select_fields}
+        info['text'] = xuni(tweet['text']) # convert to unicode for emoji
+        # use 'location' instead of 'place' to match Tweet model
+        info['location'] = location_from_place(tweet['place'])
         tweets.append(Tweet(**info))
     return tweets
+
+
+def location_from_place(place):
+    """ Extract present fields from Twitter place and combine them into a
+    Location """
+    if place is None: return None
+
+    l = Location(place_id=place['id'])
+
+    if 'attributes' in place and 'street_address' in place['attributes']:
+        l.line1 = place['attributes']['street_address']
+
+    if 'country' in place:
+        l.country = place['country']
+
+    if 'bounding_box' in place:
+        box = place['bounding_box']['coordinates'][0]
+        l.longitude = (box[0][0]+box[2][0])/2
+        l.latitude  = (box[0][1]+box[2][1])/2
+        l.bbox_width = (box[2][0]-box[0][0])
+        l.bbox_height  = (box[2][1]-box[0][1])
+
+    return l
 
 search_terms = [
     '#foodpoisoning',
@@ -48,7 +74,7 @@ search_terms = [
     '"the runs"'
 ]
 
-# all possible fields from twitter
+# all possible fields from twitter that we want to import directly
 fields = [
 #         'contributors', #<type 'NoneType'>
 #         'truncated', #<type 'bool'>
@@ -73,7 +99,7 @@ fields = [
         'lang', #<type 'unicode'>
         'created_at', #<type 'unicode'>
         'in_reply_to_status_id_str', #<type 'NoneType'>
-        'place', #<type 'NoneType'>
+#         'place', #<type 'NoneType'>
 #         'metadata', #<type 'dict'>
          ]
 

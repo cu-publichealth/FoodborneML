@@ -7,6 +7,18 @@ from foodbornenyc.models.documents import Tweet
 from foodbornenyc.test.test_db import clear_tables, get_db_session
 from twython.exceptions import TwythonError
 
+place1 = {'id': '12345'}
+place2 = {'id': '23456',
+          'attributes': {'street_address': '1234 Broadway'},
+          'country': 'United States',
+          "bounding_box": { "coordinates": [[
+              [-1, -1],
+              [1, -1],
+              [1, 1],
+              [-1, 1]]],
+              "type": "Polygon"},
+          }
+
 sample = [ {
             'id_str':'2',
             'text':"I hate food!",
@@ -24,7 +36,7 @@ sample = [ {
             'lang': 'en',
             'created_at': 'Tue Feb 23 21:00:11 +0000 2015',
             'in_reply_to_status_id_str': None,
-            'place': None
+            'place': place2
         }]
 
 def test_make_query():
@@ -54,6 +66,23 @@ def test_tweets_to_Tweets():
     fields = ['text', 'id_str']
     tweets = twitter_search.tweets_to_Tweets(sample, fields)
     assert_matching_tweets(tweets)
+
+def test_location_from_place():
+    assert twitter_search.location_from_place(None) == None
+
+    location1 = twitter_search.location_from_place(place1)
+    assert location1.line1 == ''
+    assert location1.country == ''
+    assert location1.street_address == place1['id']
+
+    location2 = twitter_search.location_from_place(place2)
+    assert location2.street_address == place2['id']
+    assert location2.line1 == place2['attributes']['street_address']
+    assert location2.country == place2['country']
+    assert location2.longitude == 0
+    assert location2.latitude == 0
+    assert location2.bbox_width == 2
+    assert location2.bbox_height == 2
 
 @patch('foodbornenyc.sources.twitter_search.Twython')
 @patch('foodbornenyc.sources.twitter_search.get_db_session')
@@ -89,5 +118,6 @@ def assert_matching_tweets(tweets):
     assert tweets[0].id == sample[0]['id_str']
     assert tweets[1].text == sample[1]['text']
     assert tweets[1].id == sample[1]['id_str']
+    assert tweets[1].location.line1 == place2['attributes']['street_address']
 
 

@@ -4,6 +4,7 @@ from mock import Mock, patch
 import json
 import foodbornenyc.sources.twitter_search as twitter_search
 from foodbornenyc.models.businesses import Business
+from foodbornenyc.models.locations import Location
 from foodbornenyc.models.documents \
     import Document, DocumentAssoc, Tweet, YelpReview
 from foodbornenyc.test.test_db import clear_tables, get_db_session
@@ -52,8 +53,9 @@ def testTweet(db):
     sample = { 'id_str':'2', 'text':"I hate food!",
                'in_reply_to_user_id_str': '233', 'lang': 'en',
                'in_reply_to_status_id_str': '449' }
-    sample_optional = {'user': {'id_str': '234'}, 'place': 'New York City',
-                       'created_at': 'Tue Feb 23 23:40:54 +0000 2015'}
+    sample_optional = { 'user': {'id_str': '234'},
+                        'location': Location(place_id='12345', city='Boston'),
+                        'created_at': 'Tue Feb 23 23:40:54 +0000 2015' }
 
     sample2 = sample.copy()
     sample2.update(sample_optional)
@@ -66,7 +68,7 @@ def testTweet(db):
     assert tweet.id == sample['id_str']
     assert tweet.user_id == None
     assert tweet.created_at == None
-    assert tweet.place == None
+    assert tweet.location == None
     assert tweet.text == sample['text']
     assert tweet.in_reply_to_user_id_str == sample['in_reply_to_user_id_str']
     assert tweet.lang == sample['lang']
@@ -79,12 +81,9 @@ def testTweet(db):
     db.commit()
 
     tweet = db.query(Tweet).first()
-    assert tweet.place == json.dumps(sample2['place'])
+    assert tweet.location == sample2['location']
     assert tweet.user_id == sample2['user']['id_str']
 
     # test document
     assert tweet.document_rel.assoc_id == sample['id_str']
     assert tweet.document.id == tweet.document_rel.document[0].id
-
-# TODO: test for when a yelp review and a tweet have the same id. do documents
-# still work?

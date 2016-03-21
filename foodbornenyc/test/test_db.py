@@ -40,7 +40,7 @@ def reset():
     models.setup_db(test_config)
 
 @main.command()
-def clear():
+def clear_tables():
     """ Clears the tables without dropping them. For use in test setup. """
     import contextlib
     with contextlib.closing(models.get_db_engine(test_config).connect()) as con:

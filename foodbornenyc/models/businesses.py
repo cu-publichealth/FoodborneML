@@ -70,7 +70,7 @@ businesses = Table('businesses', metadata,
                    Column('updated_at', DateTime, default=datetime.now, onupdate=datetime.now),
                    Column('is_closed', Boolean, nullable=False, default=False),
                    Column('location_id', String(255*6),
-                          ForeignKey('locations.id', name='fk_loc')))
+                          ForeignKey('locations.id', name='fk_loc_businesses')))
 
 business_category_table = Table('businesses_categories', metadata,
                                 Column('business_id', String(64),

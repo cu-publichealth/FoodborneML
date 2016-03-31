@@ -76,16 +76,18 @@ def location_id(location_dict):
 
 
 locations = Table('locations', metadata,
-    Column('id', String(255), nullable=False, primary_key=True),
+    Column('id', String(255*6), nullable=False, primary_key=True),
 
     Column('latitude', Float, nullable=True),
     Column('longitude', Float, nullable=True),
     Column('bbox_width', Float, nullable=True),
     Column('bbox_height', Float, nullable=True),
 
-    CheckConstraint('(bbox_width AND bbox_height AND latitude AND longitude)'
-             'OR NOT (bbox_width OR bbox_height OR latitude OR longitude)', 
-             name='valid_bbox'),
+    CheckConstraint('(bbox_width IS NOT NULL AND bbox_height IS NOT NULL AND '
+                    'latitude IS NOT NULL AND longitude IS NOT NULL) OR'
+                    '(bbox_width IS NULL AND bbox_height IS NULL AND '
+                    'latitude IS NULL AND longitude IS NULL)',
+                    name='valid_bbox'),
 
     Column('line1', String(255), nullable=False, default=''),
     Column('line2', String(255), nullable=False, default=''),

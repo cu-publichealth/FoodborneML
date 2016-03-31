@@ -295,7 +295,7 @@ tweets = Table('tweets', metadata,
                Column('in_reply_to_user_id_str', String(64)),
                Column('created_at', DateTime),
                Column('location_id', String(255*6),
-                      ForeignKey('locations.id', name='fk_loc')))
+                      ForeignKey('locations.id', name='fk_loc_tweets')))
 
 mapper(Tweet, tweets,
        properties={

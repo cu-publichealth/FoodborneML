@@ -66,7 +66,7 @@ def location_id(location_dict):
     """ Takes a dictionary of location information to make an identifer string.
     This is defined outside the Location object as a faster avenue. """
     d = location_dict
-    iden = "%s | %s | %s | %s | %s | %s" %
+    iden = "%s | %s | %s | %s | %s | %s" % \
             (d['line1'], d['line2'], d['line3'], d['city'], d['state'],
              d['postal_code'])
     if d['bbox_width'] and d['bbox_height']:

@@ -18,6 +18,23 @@ place2 = {'id': '23456',
               [-1, 1]]],
               "type": "Polygon"},
           }
+place3 = {'id': '34567',
+          'full_name': 'The Place',
+          'country': 'United States',
+          'bounding_box': { 'coordinates': [[
+              [1, 1],
+              [1, 1],
+              [1, 1],
+              [1, 1]]],
+              'type': 'Polygon'},
+          }
+fsq_place = [{'location': {
+            'address': '11 Broadway',
+            'city': 'New York',
+            'country': 'United States',
+            'lat': '1.1',
+            'lng': '0.9'
+            }}]
 
 sample = [ {
             'id_str':'2',
@@ -67,16 +84,18 @@ def test_tweets_to_Tweets():
     tweets = twitter_search.tweets_to_Tweets(sample, fields)
     assert_matching_tweets(tweets)
 
-def test_location_from_place():
+@patch('foodbornenyc.sources.twitter_search.geo')
+def test_location_from_place(geo):
+    # a None place should return a None location
     assert twitter_search.location_from_place(None) == None
 
+    # a place with no info should have nothing in the Location
     location1 = twitter_search.location_from_place(place1)
     assert location1.line1 == ''
     assert location1.country == ''
-    assert location1.street_address == place1['id']
 
+    # a large region should have its bounding box fields
     location2 = twitter_search.location_from_place(place2)
-    assert location2.street_address == place2['id']
     assert location2.line1 == place2['attributes']['street_address']
     assert location2.country == place2['country']
     assert location2.longitude == 0
@@ -84,17 +103,33 @@ def test_location_from_place():
     assert location2.bbox_width == 2
     assert location2.bbox_height == 2
 
-@patch('foodbornenyc.sources.twitter_search.Twython')
+    # a specific point should have its fields filled in by foursquare
+    geo.search_location.return_value = fsq_place
+    location3 = twitter_search.location_from_place(place3)
+    assert location3.bbox_width == 0
+    assert location3.bbox_height == 0
+    assert location3.line1 == fsq_place[0]['location']['address']
+    assert location3.city == fsq_place[0]['location']['city']
+    assert location3.country == fsq_place[0]['location']['country']
+    assert location3.longitude == fsq_place[0]['location']['lng']
+    assert location3.latitude == fsq_place[0]['location']['lat']
+
+    # requesting the same location from place should not make an extra fsq call
+    location4 = twitter_search.location_from_place(place3)
+    assert len(geo.search_location.call_args_list) == 1
+
+
+@patch('foodbornenyc.sources.twitter_search.twitter')
 @patch('foodbornenyc.sources.twitter_search.get_db_session')
 @patch('foodbornenyc.sources.twitter_search.time')
 @patch('foodbornenyc.sources.twitter_search.sleep')
-def test_query_twitter(sleep, time, db_session, twython):
+def test_query_twitter(sleep, time, db_session, twitter):
     """ Database should be filled with tweets returned from Twython """
     clear_tables()
+    twitter_search.location_cache = {} # reset location_cache
 
     # make twitter return the sample tweets
     tweet_sequence = [{'statuses': [sample[0]]}, {'statuses': [sample[1]]}]
-    twitter = twython.return_value
     twitter.search = Mock(side_effect=tweet_sequence)
 
     # make get_db_session in query_twitter use the test db

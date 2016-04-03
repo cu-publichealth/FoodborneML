@@ -18,7 +18,7 @@ decorator==4.0.4
 docutils==0.12
 enum34==1.0.4
 et-xmlfile==1.0.1
-foursquare==1!2015.5.26
+foursquare==2015.2.2
 funcsigs==0.4
 functools32==3.2.3-2
 futures==2.2.0

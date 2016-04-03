@@ -67,17 +67,17 @@ def copy_tables():
     # [b.categories ...] is a list of lists, so we need a little more processing
     categories = set().union(*[b.categories for b in businesses])
 
-    tweets = db.query(Tweet).order_by(Tweet.id)[0:5]
+    # tweets = db.query(Tweet).order_by(Tweet.id)[0:5]
     reviews = []
     for b in businesses:
         reviews.extend(
             db.query(YelpReview).filter(YelpReview.business_id == b.id)[0:5]
         )
-    documents = [r.document for r in reviews] + [t.document for t in tweets]
-    doc_assoc = [r.document_rel for r in reviews] + \
-                [t.document_rel for t in tweets]
+    documents = [r.document for r in reviews] #+ [t.document for t in tweets]
+    doc_assoc = [r.document_rel for r in reviews] #+ \
+                # [t.document_rel for t in tweets]
 
-    tables = [businesses, locations, categories, reviews, tweets, \
+    tables = [businesses, locations, categories, reviews, #tweets, \
               documents, doc_assoc]
 
     # detach all objects from db session before putting them in toy

@@ -28,8 +28,8 @@ class Location(object):
                  postal_code=None,
                  state=None,
                  place_id=None):
-        #self.latitude = latitude
-        #self.longitude = longitude
+        self.latitude = latitude
+        self.longitude = longitude
         self.line1 = xstr(line1)
         self.line2 = xstr(line2)
         self.line3 = xstr(line3)
@@ -37,8 +37,8 @@ class Location(object):
         self.country = xstr(country)
         self.postal_code = xstr(postal_code)
         self.state = xstr(state)
-        #self.bbox_width = bbox_width
-        #self.bbox_height = bbox_height
+        self.bbox_width = bbox_width
+        self.bbox_height = bbox_height
 
         # primary key for addresses: either the Twitter place id or a concat of
         # the other fields for yelp businesses. a decent preliminary identifier
@@ -70,10 +70,10 @@ class Location(object):
 
 locations = Table('locations', metadata,
                   Column('street_address', String(255*6), primary_key=True),
-                  # Column('latitude', Float, nullable=True),
-                  # Column('longitude', Float, nullable=True),
-                  # Column('bbox_width', Float, nullable=True),
-                  # Column('bbox_height', Float, nullable=True),
+                  Column('latitude', Float, nullable=True),
+                  Column('longitude', Float, nullable=True),
+                  Column('bbox_width', Float, nullable=True),
+                  Column('bbox_height', Float, nullable=True),
                   Column('line1', String(255), nullable=False, default=''),
                   Column('line2', String(255), nullable=False, default=''),
                   Column('line3', String(255), nullable=False, default=''),

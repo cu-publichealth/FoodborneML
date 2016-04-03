@@ -32,7 +32,7 @@ def get_db_session():
     return models.get_db_session(test_config)
 
 @main.command()
-def reset():
+def reset_test_db():
     """ Drops all tables and recreates them. To be done once per schema change
     to update toy.db. """
     logger.info("Resetting all tables in %s", test_config['dbhost'])
@@ -50,7 +50,7 @@ def clear_tables():
         trans.commit()
 
 @main.command()
-def copy():
+def copy_tables():
     """ Copies a few items from each table into a test database
 
     Should not be called in the same session after reset_test_db(); you will get

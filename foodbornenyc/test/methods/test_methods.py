@@ -68,7 +68,7 @@ def test_classify_time(classify):
 	#takes difference of earliest and latest timestamps
 	start = min([float(doc.fp_pred_time.strftime("%s.%f")) for doc in query])
 	end = 	max([float(doc.fp_pred_time.strftime("%s.%f")) for doc in query])
-	assert end - start <= 2
+	assert end - start <= .2
 
 def test_obvious_triggers(classify):
 	""" Verify that adding some obvious trigger text would cause probabilities to jump """

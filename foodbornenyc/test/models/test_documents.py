@@ -54,7 +54,7 @@ def testTweet(db):
                'in_reply_to_user_id_str': '233', 'lang': 'en',
                'in_reply_to_status_id_str': '449' }
     sample_optional = { 'user': {'id_str': '234'},
-                        'location': Location(place_id='12345', city='Boston'),
+                        'location': Location(line1='11 Main St', city='Boston'),
                         'created_at': 'Tue Feb 23 23:40:54 +0000 2015' }
 
     sample2 = sample.copy()

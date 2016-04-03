@@ -58,7 +58,7 @@ class Location(object):
 
     def __eq__(self, other):
         if isinstance(other, self.__class__):
-            return self.address() == other.address()
+            return self.identifier() == other.identifier()
         else:
             raise TypeError
 

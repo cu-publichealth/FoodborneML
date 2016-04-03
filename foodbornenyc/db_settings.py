@@ -21,4 +21,7 @@ foursquare_config = {
     'client_secret': ''
 }
 
-from foodbornenyc.my_db_settings import *
+try:
+    from foodbornenyc.my_db_settings import *
+except:
+    pass

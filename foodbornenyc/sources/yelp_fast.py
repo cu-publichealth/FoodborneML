@@ -18,7 +18,7 @@ from foodbornenyc.models.models import get_db_session
 from foodbornenyc.models.download_history import YelpDownloadHistory
 from foodbornenyc.models.businesses import Business, YelpCategory
 from foodbornenyc.models.businesses import businesses, categories, business_category_table
-from foodbornenyc.models.locations import Location, locations
+from foodbornenyc.models.locations import Location, locations, location_id
 from foodbornenyc.models.documents import YelpReview, Document
 from foodbornenyc.models.documents import yelp_reviews, documents, document_associations
 
@@ -26,7 +26,7 @@ from foodbornenyc.settings import yelp_download_config as config
 from foodbornenyc.db_settings import database_config as dbconfig
 
 from foodbornenyc.util.util import get_logger, xstr, xuni, sec_to_hms
-logger = get_logger(__name__)
+logger = get_logger(__name__, level='INFO')
 
 def download_url_to_file(url, data_dir, filename):
     """Download a url to local file.
@@ -133,7 +133,7 @@ def download_latest_yelp_data():
                 ExpiresIn=3600 # 1 hour in seconds
                 )
         # do the downloading
-        logger.info("Feed URL: ", url)
+        logger.info("Feed URL: %s", url)
         try:
             download_url_to_file(url, config['rawdata_dir'], config['local_file'])
             # if we succeed, move on
@@ -262,7 +262,7 @@ def upsert_yelpfile_to_db(filename, geocode=True):
     # this will improve upload speeds
     if init_db and 'mssql' in dbconfig['dbbackend']:
         disable_fk = """
-        ALTER TABLE dbo.%s NOCHECK CONSTRAINT fk_loc;
+        ALTER TABLE dbo.%s NOCHECK CONSTRAINT fk_loc_businesses;
         ALTER TABLE dbo.%s NOCHECK CONSTRAINT fk_biz_id;
         ALTER TABLE dbo.%s NOCHECK CONSTRAINT fk_cat_alias;
         ALTER TABLE dbo.%s NOCHECK CONSTRAINT fk_rev_biz_id;
@@ -346,11 +346,6 @@ def upsert_yelpfile_to_db(filename, geocode=True):
                             logger.info("No Lat/Long for restaurant, attempting to geocode...")
                             # TODO(shao): replace with foursquare geocoder
                             raise Exception('geocode not implemented')
-
-                            street_address = ""
-                            geo = geoLocator.geocode(street_address, timeout=2)
-                            location['latitude'] = geo.latitude
-                            location['longitude'] = geo.longitude
                         except:
                             logger.warning("Geocode failed, assigning NULL Lat/Long")
                 # add to running list of unloaded locations
@@ -509,8 +504,14 @@ def location_dict_yelp(loc):
                 'city':xstr(loc['city']),
                 'country':xstr(loc['country']),
                 'postal_code':xstr(loc['postal_code']),
-                'state':xstr(loc['state'])
+                'state':xstr(loc['state']),
             }
+    if location['latitude'] is not None:
+        location['bbox_width'] = 0
+        location['bbox_height'] = 0
+    else:
+        location['bbox_width'] = None
+        location['bbox_height'] = None
     location['id'] = location_id(location)
     return location
 

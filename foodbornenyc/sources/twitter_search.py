@@ -8,6 +8,7 @@ from twython.exceptions import TwythonError
 from sqlalchemy.exc import OperationalError
 
 from foodbornenyc.models.documents import Tweet
+from foodbornenyc.models.users import TwitterUser
 from foodbornenyc.models.locations import Location
 from foodbornenyc.models.models import get_db_session
 
@@ -41,23 +42,29 @@ def tweets_to_Tweets(tweet_list, select_fields):
     for tweet in tweet_list:
         info = {k:v for (k,v) in tweet.items() if k in select_fields}
         info['text'] = xuni(tweet['text']) # convert to unicode for emoji
-        # use 'location' instead of 'place' to match Tweet model
-        info['location'] = location_from_place(tweet['place'])
+        info['location'] = place_to_Location(tweet['place'])
+        info['user'] = user_to_TwitterUser(tweet['user'])
         tweets.append(Tweet(**info))
     return tweets
 
+user_fields = ['id_str', 'name', 'screen_name', 'location', 'description']
+def user_to_TwitterUser(user):
+    """ Convert the user json from Twitter into a TwitterUser, possibly updating
+    the db entry with the same key in the process. """
+    u = TwitterUser(**{k:v for (k,v) in user.items() if k in user_fields})
+    # update user from DB if it exists
+    return u
 
 location_cache = {}
-
-def location_from_place(place):
+def place_to_Location(place):
     """ Extract present fields from Twitter place and combine them into a
-    Location. Saves location to temporary cache for later tweets."""
+    Location. Saves location to temporary cache for later tweets. Updates the
+    db entry with the same key in the process, if it exists. """
     # the documentation guarantees each place to hae an id, but experimentally
     # most/all places have full_name and bounding_box.
     if place is None: return None
 
     if place['id'] in location_cache:
-        logger.info(location_cache[place['id']])
         return location_cache[place['id']]
 
     l = Location()
@@ -154,8 +161,10 @@ def query_twitter(how_long=0, interval=5):
             continue
         #logger.info("%i Total unique tweets in %i:%i:%i time", len(id_set),
         #            *sec_to_hms(time()-start))
-        new_tweets = [ t for t in tweets if t['id_str'] not in id_set ]
-        new_Tweets = tweets_to_Tweets(new_tweets, fields)
+        new_tweets = [t for t in tweets if t['id_str'] not in id_set]
+        # if a retrieved tweet has a loc/user with a matching ID already in the
+        # db, that loc/user is updated instead of a new one added, bc of merge
+        new_Tweets = [db.merge(t) for t in tweets_to_Tweets(new_tweets, fields)]
         id_set |= set([ t.id for t in new_Tweets ]) # union add all new ones
         try:
             db.add_all(new_Tweets)

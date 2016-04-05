@@ -35,20 +35,32 @@ fsq_place = [{'location': {
             'lat': '1.1',
             'lng': '0.9'
             }}]
+user1 = {'id_str': '3333',
+        'name': 'Bobby',
+        'screen_name': 'bob',
+        'location': 'The Internet',
+        'description': 'Bobbin\''
+        }
+user2 = {'id_str': '444',
+        'name': 'Jimmy',
+        'screen_name': 'jim',
+        'location': 'The Outernet',
+        'description': 'Jammin\''
+        }
 
 sample = [ {
             'id_str':'2',
             'text':"I hate food!",
-            'user': {'id_str': '234'},
+            'user': user1,
             'in_reply_to_user_id_str': None,
             'lang': 'en',
             'created_at': 'Tue Feb 23 23:40:54 +0000 2015',
             'in_reply_to_status_id_str': None,
-            'place': None
+            'place': place2
         }, {
             'id_str':'34',
             'text':"My stomach hurts!",
-            'user': {'id_str': '2234'},
+            'user': user1,
             'in_reply_to_user_id_str': None,
             'lang': 'en',
             'created_at': 'Tue Feb 23 21:00:11 +0000 2015',
@@ -80,22 +92,36 @@ def test_make_query_failed():
 
 def test_tweets_to_Tweets():
     """ Sample tweets should be converted properly """
-    fields = ['text', 'id_str']
+    fields = ['text', 'id_str', 'user']
     tweets = twitter_search.tweets_to_Tweets(sample, fields)
     assert_matching_tweets(tweets)
 
+def test_user_to_TwitterUser():
+    clear_tables()
+    db = get_db_session()
+
+    # the fields should be filled in correctly
+    u = twitter_search.user_to_TwitterUser(user1)
+    print u
+    assert u.id == user1['id_str']
+    assert u.name == user1['name']
+    assert u.screen_name == user1['screen_name']
+    assert u.location == user1['location']
+    assert u.description == user1['description']
+
 @patch('foodbornenyc.sources.twitter_search.geo')
-def test_location_from_place(geo):
+def test_place_to_Location(geo):
+    clear_tables()
     # a None place should return a None location
-    assert twitter_search.location_from_place(None) == None
+    assert twitter_search.place_to_Location(None) == None
 
     # a place with no info should have nothing in the Location
-    location1 = twitter_search.location_from_place(place1)
+    location1 = twitter_search.place_to_Location(place1)
     assert location1.line1 == ''
     assert location1.country == ''
 
     # a large region should have its bounding box fields
-    location2 = twitter_search.location_from_place(place2)
+    location2 = twitter_search.place_to_Location(place2)
     assert location2.line1 == place2['attributes']['street_address']
     assert location2.country == place2['country']
     assert location2.longitude == 0
@@ -105,7 +131,7 @@ def test_location_from_place(geo):
 
     # a specific point should have its fields filled in by foursquare
     geo.search_location.return_value = fsq_place
-    location3 = twitter_search.location_from_place(place3)
+    location3 = twitter_search.place_to_Location(place3)
     assert location3.bbox_width == 0
     assert location3.bbox_height == 0
     assert location3.line1 == fsq_place[0]['location']['address']
@@ -115,7 +141,7 @@ def test_location_from_place(geo):
     assert location3.latitude == fsq_place[0]['location']['lat']
 
     # requesting the same location from place should not make an extra fsq call
-    location4 = twitter_search.location_from_place(place3)
+    location4 = twitter_search.place_to_Location(place3)
     assert len(geo.search_location.call_args_list) == 1
 
 
@@ -132,7 +158,7 @@ def test_query_twitter(sleep, time, db_session, twitter):
     tweet_sequence = [{'statuses': [sample[0]]}, {'statuses': [sample[1]]}]
     twitter.search = Mock(side_effect=tweet_sequence)
 
-    # make get_db_session in query_twitter use the test db
+    # make query_twitter use the test db
     db_session.return_value = get_db_session()
 
     # make time.time return canned values and time.sleep do nothing

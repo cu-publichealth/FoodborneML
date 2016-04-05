@@ -1,7 +1,7 @@
 """
 The User Model
 
-This is currently just for twitter users and uses the declarative style.
+This is currently just for twitter users
 """
 from sqlalchemy import Column, Table
 from sqlalchemy import Integer, Unicode, UnicodeText, DateTime, String

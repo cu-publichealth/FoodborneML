@@ -17,7 +17,7 @@ install:
 # reset test database before doing tests. it's important NOT to reset_test_db()
 # in the same session at the tests, as that confuses sqlalchemy.
 before_script:
-  - python -c 'import foodbornenyc.test.testdb as t; t.reset_test_db()'
+  - python -c 'import foodbornenyc.test.test_db as t; t.reset_test_db()'
 
 # command to run tests
 script: 

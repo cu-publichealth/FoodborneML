@@ -7,6 +7,7 @@ from foodbornenyc.models.businesses import Business
 from foodbornenyc.models.locations import Location
 from foodbornenyc.models.documents \
     import Document, DocumentAssoc, Tweet, YelpReview
+from foodbornenyc.models.users import TwitterUser
 from foodbornenyc.test.test_db import clear_tables, get_db_session
 
 @pytest.fixture(scope="function")
@@ -53,7 +54,7 @@ def testTweet(db):
     sample = { 'id_str':'2', 'text':"I hate food!",
                'in_reply_to_user_id_str': '233', 'lang': 'en',
                'in_reply_to_status_id_str': '449' }
-    sample_optional = { 'user': {'id_str': '234'},
+    sample_optional = { 'user': TwitterUser(234),
                         'location': Location(line1='11 Main St', city='Boston'),
                         'created_at': 'Tue Feb 23 23:40:54 +0000 2015' }
 
@@ -82,7 +83,7 @@ def testTweet(db):
 
     tweet = db.query(Tweet).first()
     assert tweet.location == sample2['location']
-    assert tweet.user_id == sample2['user']['id_str']
+    assert tweet.user.id == sample2['user'].id
 
     # test document
     assert tweet.document_rel.assoc_id == sample['id_str']

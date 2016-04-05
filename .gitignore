@@ -9,3 +9,4 @@ setup.py
 foodbornenyc/db_settings.py
 .cache/
 foodbornenyc/my_db_settings.py
+toy.db

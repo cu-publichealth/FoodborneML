@@ -18,7 +18,7 @@ from foodbornenyc.models.models import get_db_session
 from foodbornenyc.models.download_history import YelpDownloadHistory
 from foodbornenyc.models.businesses import Business, YelpCategory
 from foodbornenyc.models.businesses import businesses, categories, business_category_table
-from foodbornenyc.models.locations import Location, locations
+from foodbornenyc.models.locations import Location, locations, location_id
 from foodbornenyc.models.documents import YelpReview, Document
 from foodbornenyc.models.documents import yelp_reviews, documents, document_associations
 
@@ -26,7 +26,7 @@ from foodbornenyc.settings import yelp_download_config as config
 from foodbornenyc.db_settings import database_config as dbconfig
 
 from foodbornenyc.util.util import get_logger, xstr, xuni, sec_to_hms
-logger = get_logger(__name__)
+logger = get_logger(__name__, level='INFO')
 
 def download_url_to_file(url, data_dir, filename):
     """Download a url to local file.
@@ -133,7 +133,7 @@ def download_latest_yelp_data():
                 ExpiresIn=3600 # 1 hour in seconds
                 )
         # do the downloading
-        logger.info("Feed URL: ", url)
+        logger.info("Feed URL: %s", url)
         try:
             download_url_to_file(url, config['rawdata_dir'], config['local_file'])
             # if we succeed, move on
@@ -229,7 +229,7 @@ def upsert_yelpfile_to_db(filename, geocode=True):
 
     # if it doesn't exist, isnt today, hasn't been downloaded or unzipped
     if not ydh or not ydh.date == date.today() or not ydh.downloaded or not ydh.unzipped:
-        logger.critical("Can't upload todays feed if it hasn't been downloaded and unzipped")
+        logger.critical("Can't upload today's feed if it hasn't been downloaded and unzipped")
         return
 
     if ydh.uploaded:
@@ -245,7 +245,7 @@ def upsert_yelpfile_to_db(filename, geocode=True):
     # because we've uploaded them since yelp updated them
     # this part gets the skip condition
     newest = db.query(Business).order_by(desc(Business.updated_at)).first()
-    
+
     # check for if there's a business in the db
     if newest:
         most_recent = newest.updated_at
@@ -262,7 +262,7 @@ def upsert_yelpfile_to_db(filename, geocode=True):
     # this will improve upload speeds
     if init_db and 'mssql' in dbconfig['dbbackend']:
         disable_fk = """
-        ALTER TABLE dbo.%s NOCHECK CONSTRAINT fk_loc;
+        ALTER TABLE dbo.%s NOCHECK CONSTRAINT fk_loc_businesses;
         ALTER TABLE dbo.%s NOCHECK CONSTRAINT fk_biz_id;
         ALTER TABLE dbo.%s NOCHECK CONSTRAINT fk_cat_alias;
         ALTER TABLE dbo.%s NOCHECK CONSTRAINT fk_rev_biz_id;
@@ -282,8 +282,8 @@ def upsert_yelpfile_to_db(filename, geocode=True):
                         for b in db.query(Business.id).all() ])
         db_review_ids = set([ r.id 
                             for r in db.query(YelpReview.id).all() ])
-        db_locations = set([ l.street_address 
-                            for l in db.query(Location.street_address).all() ])
+        db_locations = set([ l.id 
+                            for l in db.query(Location.id).all() ])
         db_categories = set([ c.alias 
                             for c in db.query(YelpCategory.alias).all() ])
         db_biz_categories = set([ (assoc.business_id, assoc.category_alias) 
@@ -336,154 +336,44 @@ def upsert_yelpfile_to_db(filename, geocode=True):
                     # print biz_count
                     continue
 
-            # create the Location object
-            loc = dict(biz['location'])                     
-            street_address = xstr(loc['address'][0])\
-                +', ' +xstr(loc['address'][1])\
-                +', ' +xstr(loc['address'][2])\
-                +', '+xstr(loc['city']) +', '+xstr(loc['state'])\
-                +' '+xstr(loc['postal_code'])
-            street_address = street_address.lower()
-
-            # haven't encountered this location so make one
-            if street_address not in db_locations and street_address not in unloaded_locations.keys():
-                try: # some don't have lat,longs
-                    location = {
-                                'street_address':street_address,
-                                'latitude':float(loc['coordinate']['latitude']),
-                                'longitude':float(loc['coordinate']['longitude']),
-                                'line1':xstr(loc['address'][0]),
-                                'line2':xstr(loc['address'][1]),
-                                'line3':xstr(loc['address'][2]),
-                                'city':xstr(loc['city']),
-                                'country':xstr(loc['country']),
-                                'postal_code':xstr(loc['postal_code']),
-                                'state':xstr(loc['state'])
-                                }
-                except TypeError: # so they can't get converted to float
-                    # so reverse geocode them (if enabled)
+            # make note of new Locations
+            location = location_dict_yelp(biz['location'])
+            if location['id'] not in db_locations and location['id'] not in unloaded_locations.keys():
+                if not location['latitude'] and not location['longitude'] and geocode:
+                    # try to reverse-geocode missing coords (if enabled)
                     if geocode:
                         try:
                             logger.info("No Lat/Long for restaurant, attempting to geocode...")
-                            geo = geoLocator.geocode(street_address, timeout=2)
-                            lat = geo.latitude
-                            lon = geo.longitude
+                            # TODO(shao): replace with foursquare geocoder
+                            raise Exception('geocode not implemented')
                         except:
                             logger.warning("Geocode failed, assigning NULL Lat/Long")
-                            lat = None
-                            lon = None
-                    # else ignore the lat/lons
-                    else:
-                        lat = None
-                        lon = None
-                    location = {
-                                'street_address':street_address,
-                                'latitude':lat,
-                                'longitude':lon,
-                                'line1':xstr(loc['address'][0]),
-                                'line2':xstr(loc['address'][1]),
-                                'line3':xstr(loc['address'][2]),
-                                'city':xstr(loc['city']),
-                                'country':xstr(loc['country']),
-                                'postal_code':xstr(loc['postal_code']),
-                                'state':xstr(loc['state'])
-                                }
                 # add to running list of unloaded locations
-                unloaded_locations[street_address] = location 
+                unloaded_locations[location['id']] = location 
 
-            # create the Business Object
-            if biz['is_closed'] == 0: is_closed = False
-            else: is_closed = True
-
-            # if old business we need to update it
+            # update or insert business depending on if it's already in db
+            business = business_yelp_dict(biz, location)
             if biz['id'] in db_biz_ids:
-                business = {
-                        'id':biz['id'],
-                        'name':biz['name'],
-                        'phone':biz['phone'],
-                        'rating':biz['rating'],
-                        'url':biz['url'],
-                        'business_url':biz['business_url'],
-                        'last_updated':datetime.strptime(biz['time_updated'], "%Y-%m-%dT%H:%M:%S"),
-                        'is_closed':is_closed,
-                        'location_address':street_address,
-                        'updated_at':datetime.now()
-                        }
                 update_businesses.append(business)
-            # else it's new so insert it
             else:
-                business = {
-                        'id':biz['id'],
-                        'name':biz['name'],
-                        'phone':biz['phone'],
-                        'rating':biz['rating'],
-                        'url':biz['url'],
-                        'business_url':biz['business_url'],
-                        'last_updated':datetime.strptime(biz['time_updated'], "%Y-%m-%dT%H:%M:%S"),
-                        'is_closed':is_closed,
-                        'location_address':street_address,
-                        'updated_at':datetime.now()
-                        }
                 insert_businesses.append(business)
 
-            # create all of the Reviews
+            # update/create all the new Reviews
             for i, rev in enumerate(biz['reviews']):
                 # if the review isn't new, don't do anything
                 # uncomment this code to update it (significant slowdown)
                 if rev['id'] in db_review_ids:
                     pass
-                    # review = {
-                    #         'business_id':biz['id'],
-                    #         'text' : rev['text'],
-                    #         'rating':rev['rating'],
-                    #         'user_name':rev['user']['name'],
-                    #         'created':rev['created'],
-                    #         'yelp_id':rev['id'],
-                    #         'updated_at':datetime.now()
-                    #         }
-                    # document = {
-                    #         'id':rev['id'],
-                    #         'type':yelp_reviews.name
-                    # }
+                    # review = review_dict_yelp(biz, rev)
+                    # document = document_dict_yelp(rev)
                     # update_reviews.append(review)
                     # update_documents.append(document)
                 # else create a new one
                 else:
-                    # reviw = YelpReview(
-                                # yelp_id=)
-                    review = {
-                            'business_id':biz['id'],
-                            'text' : unicode(rev['text']),
-                            'rating':rev['rating'],
-                            'user_name':rev['user']['name'],
-                            'created':datetime.strptime(rev['created'], '%Y-%m-%d'),
-                            'id':rev['id'],
-                            # 'doc_id':rev['id'],
-                            'doc_assoc_id':rev['id'],
-                            'updated_at':datetime.now()
-                            }
-                    document = {
-                            'id':rev['id'],
-                            'assoc_id':rev['id'],
-                            # 'type':yelp_reviews.name,
-                            'created':datetime.now(),
-                            'fp_label':None,
-                            'mult_label':None,
-                            'inc_label':None,
-                            'fp_pred':None,
-                            'mul_pred':None,
-                            'inc_pred':None,
-                            'fp_label_time':None,
-                            'mult_label_time':None,
-                            'inc_label_time':None,
-                            'fp_pred_time':None,
-                            'mul_pred_time':None,
-                            'inc_pred_time':None
-                    }
-                    doc_assoc = {
-                        'assoc_id':rev['id'],
-                        'type':yelp_reviews.name
-                    }
+                    review = review_dict_yelp(biz, rev)
+                    document = document_dict_yelp(rev)
+                    doc_assoc = doc_assoc_dict_yelp(rev)
+
                     insert_reviews.append(review)
                     insert_documents.append(document)
                     insert_doc_associations.append(doc_assoc)
@@ -491,7 +381,7 @@ def upsert_yelpfile_to_db(filename, geocode=True):
 
             # create the Categories
             for category in biz['categories']:
-                # if we it's new create it, provided we haven't already
+                # if it's new create it, provided we haven't already
                 if (category['alias'] not in db_categories 
                 and category['alias'] not in unloaded_categories.keys()):
                     # some aliases are bad, so skip them
@@ -600,8 +490,84 @@ def upsert_yelpfile_to_db(filename, geocode=True):
     # update the download history
     with db.begin():
         ydh.uploaded = True
-    
-        
+
+# the following functions make dictionaries adhering to the database models
+# given the json from the yelp feed.
+
+def location_dict_yelp(loc):
+    location = {
+                'latitude':loc['coordinate']['latitude'],
+                'longitude':loc['coordinate']['longitude'],
+                'line1':xstr(loc['address'][0]),
+                'line2':xstr(loc['address'][1]),
+                'line3':xstr(loc['address'][2]),
+                'city':xstr(loc['city']),
+                'country':xstr(loc['country']),
+                'postal_code':xstr(loc['postal_code']),
+                'state':xstr(loc['state']),
+            }
+    if location['latitude'] is not None:
+        location['bbox_width'] = 0
+        location['bbox_height'] = 0
+    else:
+        location['bbox_width'] = None
+        location['bbox_height'] = None
+    location['id'] = location_id(location)
+    return location
+
+def business_yelp_dict(biz, location):
+    return {
+            'id':biz['id'],
+            'name':biz['name'],
+            'phone':biz['phone'],
+            'rating':biz['rating'],
+            'url':biz['url'],
+            'business_url':biz['business_url'],
+            'last_updated':datetime.strptime(biz['time_updated'], "%Y-%m-%dT%H:%M:%S"),
+            'is_closed':bool(biz['is_closed']),
+            'location_id':location['id'],
+            'updated_at':datetime.now()
+            }
+
+
+def review_dict_yelp(biz, rev):
+    return {
+        'business_id':biz['id'],
+        'text' : unicode(rev['text']),
+        'rating':rev['rating'],
+        'user_name':rev['user']['name'],
+        'created':datetime.strptime(rev['created'], '%Y-%m-%d'),
+        'id':rev['id'],
+        # 'doc_id':rev['id'],
+        'doc_assoc_id':rev['id'],
+        'updated_at':datetime.now()
+    }
+
+def document_dict_yelp(rev):
+    return {
+        'id':rev['id'],
+        'assoc_id':rev['id'],
+        # 'type':yelp_reviews.name,
+        'created':datetime.now(),
+        'fp_label':None,
+        'mult_label':None,
+        'inc_label':None,
+        'fp_pred':None,
+        'mul_pred':None,
+        'inc_pred':None,
+        'fp_label_time':None,
+        'mult_label_time':None,
+        'inc_label_time':None,
+        'fp_pred_time':None,
+        'mul_pred_time':None,
+        'inc_pred_time':None
+    }
+
+def doc_assoc_dict_yelp(rev):
+    return {
+        'assoc_id':rev['id'],
+        'type':yelp_reviews.name
+    }
 
 from random import shuffle # to shuffle list in place
 
@@ -660,6 +626,3 @@ def geocodeUnknownLocations(wait_time=2, run_time=240):
             db.commit()
             locations = []
     logger.info("Finished geocode attempts")
-
-
-

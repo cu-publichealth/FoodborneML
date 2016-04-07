@@ -39,6 +39,7 @@ from sqlalchemy import Float, String, UnicodeText, DateTime, Boolean, Unicode
 from sqlalchemy.orm import mapper, backref, relation, class_mapper
 
 from foodbornenyc.models.metadata import metadata
+from foodbornenyc.models.locations import Location
 
 from foodbornenyc.util.util import get_logger
 logger = get_logger(__name__)
@@ -267,7 +268,7 @@ class Tweet(object):
                  user=None,
                  lang=None,
                  created_at=None,
-                 place=None):
+                 location=None):
         self.text = text
         self.id = str(id_str)
         self.in_reply_to_status_id_str = str(in_reply_to_status_id_str)
@@ -277,11 +278,9 @@ class Tweet(object):
         if created_at:
             self.created_at = datetime.strptime(created_at, self.created_format)
         else: self.created_at = None
-        # serialize the dict for now
-        self.place= json.dumps(place) if place else None
+        self.location = location
         self.document = Document(str(id_str))
         # TODO: Add TwitterUser class and foreign key to it
-        # TODO: Don't serialize the place, resolve it to a Location/create one
 
 tweets = Table('tweets', metadata,
                Column('id', String(64), primary_key=True),
@@ -295,7 +294,12 @@ tweets = Table('tweets', metadata,
                Column('in_reply_to_status_id_str', String(64)),
                Column('in_reply_to_user_id_str', String(64)),
                Column('created_at', DateTime),
-               Column('place', UnicodeText))
+               Column('location_id', String(255*6),
+                      ForeignKey('locations.id', name='fk_loc_tweets')))
 
-mapper(Tweet, tweets)
+mapper(Tweet, tweets,
+       properties={
+           'location': relation(Location, backref=backref('tweets'))
+       })
+
 documentable(Tweet, 'document')

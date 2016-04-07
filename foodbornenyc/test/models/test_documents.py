@@ -2,7 +2,6 @@ import pytest
 from mock import Mock, patch
 
 import json
-import foodbornenyc.sources.twitter_search as twitter_search
 from foodbornenyc.models.businesses import Business
 from foodbornenyc.models.locations import Location
 from foodbornenyc.models.documents \

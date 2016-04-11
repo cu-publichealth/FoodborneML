@@ -54,22 +54,16 @@ def query_twitter(how_long=0, interval=5):
 
     # make sure we don't create duplicates.
     # keeping track of this ourselves saves many db hits
-    id_set = set([ t.id for t in db.query(Tweet.id).all() ])
     # if we don't specify go indefinitely
     while time() - start < how_long:
         tweets = make_query(twitter, search_terms)
         if not tweets: # if we dont get anything back, sleep and try again
             sleep(interval)
             continue
-        #logger.info("%i Total unique tweets in %i:%i:%i time", len(id_set),
-        #            *sec_to_hms(time()-start))
-        new_tweets = [t for t in tweets if t['id_str'] not in id_set]
         # if a retrieved tweet has a loc/user with a matching ID already in the
         # db, that loc/user is updated instead of a new one added, bc of merge
-        new_Tweets = [db.merge(tweet_to_Tweet(t)) for t in new_tweets]
-        id_set |= set([ t.id for t in new_Tweets ]) # union add all new ones
         try:
-            db.add_all(new_Tweets)
+            db.add_all([db.merge(tweet_to_Tweet(t)) for t in tweets])
             db.commit()
         except OperationalError:
             pass

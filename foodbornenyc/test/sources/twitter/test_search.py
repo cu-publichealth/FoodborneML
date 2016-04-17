@@ -9,25 +9,24 @@ from twython.exceptions import TwythonError
 
 import foodbornenyc.test.sources.twitter.sample as sample
 
-def test_make_query():
+@patch('foodbornenyc.sources.twitter.search.twitter')
+def test_make_query(twitter):
     """ The correct query should be requested """
     keywords = ['food', 'stomach', 'disease']
     tweets = {'statuses': sample.tweets}
-
-    twitter = Mock()
     twitter.search = Mock(return_value=tweets)
 
-    query = search.make_query(twitter, keywords)
+    query = search.make_query(keywords)
 
     twitter.search.assert_called_with(q='food OR stomach OR disease')
     assert query == sample.tweets
 
-def test_make_query_failed():
+@patch('foodbornenyc.sources.twitter.search.twitter')
+def test_make_query_failed(twitter):
     """ If there's an exception, fail gracefully """
-    twitter = Mock()
     twitter.search = Mock(side_effect=TwythonError("Can't reach Twitter"))
 
-    query = search.make_query(twitter, ['food'])
+    query = search.make_query(['food'])
 
     assert query == []
 

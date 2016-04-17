@@ -34,7 +34,7 @@ search_terms = [
     '"the runs"'
 ]
 
-def make_query(twitter, keywords):
+def make_query(keywords):
     """ Take keywords and Twython object and return back the statuses"""
     try:
         query = ' OR '.join(keywords)
@@ -56,7 +56,7 @@ def query_twitter(how_long=0, interval=5):
     # keeping track of this ourselves saves many db hits
     # if we don't specify go indefinitely
     while time() - start < how_long:
-        tweets = make_query(twitter, search_terms)
+        tweets = make_query(search_terms)
         if not tweets: # if we dont get anything back, sleep and try again
             sleep(interval)
             continue

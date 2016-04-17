@@ -14,6 +14,11 @@ before_install:
 install: 
   - pip install -r travis_requirements.txt
 
+# reset test database before doing tests. it's important NOT to reset_test_db()
+# in the same session at the tests, as that confuses sqlalchemy.
+before_script:
+  - python -c 'import foodbornenyc.test.test_db as t; t.reset_test_db()'
+
 # command to run tests
 script: 
   - py.test 

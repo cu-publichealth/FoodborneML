@@ -60,6 +60,7 @@ This install guide is currently just intended for Mac OSX in the Terminal. Note 
 
     - If you just want to run the tool as is then use `pip install --upgrade -r deploy_requirements.txt`
     - If you want to develop the code, use `pip install --upgrade -r requirements.txt`
+    - You may need to install additional software for the dev requirements, like a Fortran compiler.
 
 10. Congratulations! You now have FoodborneNYC installed. You can start messing with the code. Check out the command line options with `python main.py --help`
 

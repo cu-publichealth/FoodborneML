@@ -248,7 +248,7 @@ yelp_reviews = Table('yelp_reviews', metadata,
                      Column('created', DateTime),
                      Column('updated_at', DateTime,
                             default=datetime.now, onupdate=datetime.now),
-                     Column('business_id', String(64), 
+                     Column('business_id', String(64),
                             ForeignKey('businesses.id',
                                        name='fk_rev_biz_id'),
                             nullable=False))
@@ -294,9 +294,8 @@ tweets = Table('tweets', metadata,
                Column('in_reply_to_status_id_str', String(64)),
                Column('in_reply_to_user_id_str', String(64)),
                Column('created_at', DateTime),
-               Column('place_address', String(255*6),
-                      ForeignKey('locations.street_address',
-                                 name='fk_loc')))
+               Column('location_id', String(255*6),
+                      ForeignKey('locations.id', name='fk_loc_tweets')))
 
 mapper(Tweet, tweets,
        properties={

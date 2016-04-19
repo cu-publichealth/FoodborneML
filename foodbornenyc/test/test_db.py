@@ -21,8 +21,9 @@ test_config = {
     'dbbackend':'sqlite'
 }
 
-def get_db_session():
-    return models.get_db_session(test_config)
+
+def get_db_session(**kwargs):
+    return models.get_db_session(config=test_config, **kwargs)
 
 def reset_test_db():
     """ Drops all tables and recreates them. To be done once per schema change
@@ -39,7 +40,6 @@ def clear_tables():
         for table in reversed(metadata.sorted_tables):
             con.execute(table.delete())
         trans.commit()
-
 
 def copy_tables():
     """ Copies a few items from each table into a test database
@@ -89,3 +89,6 @@ def copy_tables():
         toy.execute(business_category_table.insert(), row)
 
     toy.commit()
+
+if __name__ == "__main__":
+    main()

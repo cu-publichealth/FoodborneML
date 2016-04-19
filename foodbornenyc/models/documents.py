@@ -248,7 +248,7 @@ yelp_reviews = Table('yelp_reviews', metadata,
                      Column('created', DateTime),
                      Column('updated_at', DateTime,
                             default=datetime.now, onupdate=datetime.now),
-                     Column('business_id', String(64), 
+                     Column('business_id', String(64),
                             ForeignKey('businesses.id',
                                        name='fk_rev_biz_id'),
                             nullable=False))

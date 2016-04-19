@@ -10,7 +10,7 @@ Available utilities:
 
 import logging
 import sys
-def get_logger(app, level='DEBUG'):
+def get_logger(app, level='DEBUG', filename=None):
     """
     A system level wrapping of the python logging class to make getting a logger take one function call
 
@@ -20,11 +20,17 @@ def get_logger(app, level='DEBUG'):
     Notes:
     * Will probably add in more wrappers in future
     """
+    # TODO: for testing on Travis, we should direct the stream to a logfile
+    # specify this in a config file so all modules know where to direct output
+
     # set up the logger to STDOUT
-    logging.basicConfig(stream=sys.stdout, level=level)
+    if not filename:
+        logging.basicConfig(stream=sys.stdout, level=level)
+    else:
+        logging.basicConfig(filename=filename, level=level)
     logger = logging.getLogger(app)
     return logger
-    
+
 # NOTE SURE IF THESE ARE TOTALLY ROBUST
 # convert NoneTypes , strings, and weird types to unicodes
 def xuni(s):

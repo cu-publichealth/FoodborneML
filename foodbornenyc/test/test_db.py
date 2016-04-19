@@ -22,8 +22,8 @@ test_config = {
 }
 
 
-def get_db_session():
-    return models.get_db_session(test_config)
+def get_db_session(**kwargs):
+    return models.get_db_session(config=test_config, **kwargs)
 
 def reset_test_db():
     """ Drops all tables and recreates them. To be done once per schema change

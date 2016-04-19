@@ -1,109 +1,104 @@
+"""
+An integration test suite that verifies the sanity of the Yelp Classifier model
+output and corresponding database method on a small sample of real Yelp reviews.
+"""
+
 from foodbornenyc.methods.yelp_classify import *
 from foodbornenyc.test.test_db import *
+import foodbornenyc.test.test_db as t
 
-import pytest
+from mock import Mock, patch
+import pytest, os
 
 #BUG/ISSUE: pytest doesn't support specifying logging output
 
-from foodbornenyc.util.util import sec_to_hms, get_logger
-logger = get_logger(__name__, level="WARNING")
+from foodbornenyc.util.util import sec_to_hms, get_logger, xuni, xstr
+logger = get_logger(__name__, level="INFO")
 
-db = models.get_db_session()
+db = get_db_session()
+
+__location__ = os.path.realpath(
+    os.path.join(os.getcwd(), os.path.dirname(__file__)))
 
 @pytest.fixture(scope='module')
-def classify(request):
-	""" Classify reviews and return YelpClassify() """
+@patch('foodbornenyc.methods.yelp_classify.get_db_session')
+def classify(db_session, request):
+    """ Classify reviews and return YelpClassify() """
 
-	logger.info("SETUP")
-	yc = YelpClassify()
-	yc.classify_reviews(every=True, verbose=1)
+    logger.info("SETUP")
+    # setup test database mock
+    db_session.side_effect = get_db_session
 
-	#create copy of yelp_reviews
-	#only necessary to restore yelp_reviews.text and yelp_reviews.updated_at based on the tests we currently have
-	_oldquery = db.query(YelpReview).order_by(YelpReview.id)
-	oldquery = [ {
-		'text': yr.text,
-		'updated_at': yr.updated_at
-		} for yr in _oldquery]
+    # populate database
+    clear_tables()
+    for line in open(os.path.join(__location__, "populate.sql"), "r"):
+        db.execute(xuni(line))
+    db.commit()
 
-	#unclassify, i.e. remove fp_pred and fp_pred_time, and restore yelp_reviews
-	def teardown():
-		logger.info("TEARING DOWN")
-		newquery = db.query(YelpReview).order_by(YelpReview.id)
-		for old, new in zip(oldquery, newquery):
-			new.text = old['text']
-			new.updated_at = old['updated_at']
-			new.document.fp_pred = None
-			new.document.fp_pred_time = None
+    yc = YelpClassify()
+    yc.classify_reviews(every=True, verbose=1)
 
-		db.commit()
-
-	request.addfinalizer(teardown)
-
-	return yc
+    return yc
 
 def test_reasonable_proba(classify):
-	""" Verify that fp_pred are at least reasonable, based on test data """
+    """ Verify that fp_pred are at least reasonable, based on test data """
 
-	query = db.query(Document.id, YelpReview.text, Document.__fp_pred) \
-		.filter(Document.assoc_id == YelpReview.doc_assoc_id)
-	for doc in query:
-		assert doc[2] >= 0
-		assert doc[2] <= 1
-		#if any of them are over 0.5, log text
-		if doc[2] >= 0.5:
-			#do some NLP here for quick validation?
-			logger.debug("SICK REVIEW FOUND")
-			logger.debug("Document ID: " + str(doc[0]))
-			logger.debug("Probability: " + str(doc[2]))
-			logger.debug("Review text: " + str(doc[1]))
+    query = db.query(YelpReview)
+    for review in query:
+        doc = review.document
+        assert doc.__fp_pred >= 0
+        assert doc.__fp_pred <= 1
+        #if any of them are over 0.5, log text
+        if doc.__fp_pred >= 0.5:
+            #do some NLP here for quick validation?
+            logger.debug("SICK REVIEW FOUND")
+            logger.debug("Document ID: " + str(doc.id))
+            logger.debug("Probability: " + str(doc.__fp_pred))
+            logger.debug("Review text: " + str(review.text))
 
 
 def test_classify_time(classify):
-	""" Verify that the whole operation doesn't take too long, i.e. .2 seconds """
+    """ Verify that the whole operation doesn't take too long, ie .2 seconds """
 
-	import time, datetime
-	query = db.query(Document)
+    import time, datetime
+    query = db.query(Document)
 
-	#takes difference of earliest and latest timestamps
-	start = min([float(doc.fp_pred_time.strftime("%s.%f")) for doc in query])
-	end = 	max([float(doc.fp_pred_time.strftime("%s.%f")) for doc in query])
-	assert end - start <= .2
+    #takes difference of earliest and latest timestamps
+    start = min([float(doc.fp_pred_time.strftime("%s.%f")) for doc in query])
+    end =     max([float(doc.fp_pred_time.strftime("%s.%f")) for doc in query])
+    assert end - start <= .2
 
-def test_obvious_triggers(classify):
-	""" Verify that adding some obvious trigger text would cause probabilities to jump """
+@patch('foodbornenyc.methods.yelp_classify.get_db_session')
+def test_obvious_triggers(db_session, classify):
+    """ Verify that adding obvious trigger text causes probabilities to jump """
 
-	trigger_text = [u"later that day I threw up.", u"i felt really sick the morning after.", u"two of my friends also got sick."]
-	query = db.query(YelpReview).order_by(YelpReview.id)
+    trigger_text = [u"later that day I threw up.",
+                    u"i felt really sick the morning after.",
+                    u"two of my friends also got sick."]
+    query = db.query(YelpReview).order_by(YelpReview.id)
+    db_session.side_effect = get_db_session
 
-	#keep old data
-	temp_text = []
-	temp_proba = []
-	temp_pred_time = []
+    #keep old data
+    temp_text = []
+    temp_proba = []
+    temp_pred_time = []
 
-	for review in query:
-		temp_text.append(review.text)
-		temp_proba.append(review.document.fp_pred)
-		temp_pred_time.append(review.document.fp_pred_time)
+    for review in query:
+        temp_text.append(review.text)
+        temp_proba.append(review.document.fp_pred)
+        temp_pred_time.append(review.document.fp_pred_time)
 
-		#modify text to include trigger text
-		review.text += u' '.join(trigger_text)
-	db.commit()
+        #modify text to include trigger text
+        review.text += u' '.join(trigger_text)
+    db.commit()
 
-	#classify again
-	classify.classify_reviews(every=True, verbose=1)
+    #classify again
+    classify.classify_reviews(every=True, verbose=1)
 
-	for review, proba in zip(query, temp_proba):
-		assert review.document.fp_pred >= 0.48
-		assert review.document.fp_pred - proba >= 0.11
+    for review, proba in zip(query, temp_proba):
+        assert review.document.fp_pred >= 0.45
+        assert review.document.fp_pred - proba >= 0.11
 
-	assert sum([review.document.fp_pred - proba for review, proba in zip(query, temp_proba)])/len(temp_proba) >= 0.20
-
-	#restore
-	for review, text, proba, time in zip(query, temp_text, temp_proba, temp_pred_time):
-		review.text = text
-		review.document.fp_pred = proba
-		review.document.fp_pred_time = time
-
-	db.commit()
-
+    # average of jump in probability after adding trigger text should be high
+    proba_diff = [rev.document.fp_pred - p for rev, p in zip(query, temp_proba)]
+    assert sum(proba_diff)/len(proba_diff) >= 0.20

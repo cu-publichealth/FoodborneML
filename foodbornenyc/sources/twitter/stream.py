@@ -11,12 +11,10 @@ logger = get_logger(__name__, level="INFO")
 
 def streamer_config(args):
     """ convert Twython config dict to TwythonStreamer config """
-    newargs = args.copy()
-    newargs['app_key'] = newargs.pop('consumer_key')
-    newargs['app_secret'] = newargs.pop('consumer_secret')
-    newargs['oauth_token'] = newargs.pop('access_token')
-    newargs['oauth_token_secret'] = newargs.pop('access_token_secret')
-    return newargs
+    return {'app_key': args['consumer_key'],
+            'app_secret': args['consumer_secret'],
+            'oauth_token': args['access_token'],
+            'oauth_token_secret': args['access_token_secret']}
 
 def print_tweet_json(tweet):
     print "%s\n%s\n" % (tweet['user']['name'],tweet['text'])
@@ -52,34 +50,15 @@ class FoodBorneStreamer(TwythonStreamer):
     def update_filter(self):
         self.statuses.set_dynamic_filter(follow=','.join(self.users),
                                          track=','.join(self.keywords))
+    def set_function(self, func):
+        self.receive_tweet = func
+
+    def start(self):
+        self.update_filter()
+        if self.users or self.keywords:
+            self.statuses.dynamic_filter()
+        else:
+            logger.error("Can't start stream with no keywords or users")
 
 stream = FoodBorneStreamer(**twitter_config)
 
-def set_stream_function(func):
-    streamer.receive_tweet = func
-
-def track_users(*new_users):
-    stream.users |= set(new_users)
-    stream.update_filter()
-
-def untrack_users(*users_to_remove):
-    stream.users -= set(users_to_remove)
-    stream.update_filter()
-
-def track_keywords(*new_keywords):
-    stream.keywords |= set(new_keywords)
-    stream.update_filter()
-
-def untrack_keywords(*keywords_to_remove):
-    stream.keywords -= set(new_keywords)
-    stream.update_filter()
-
-def start_stream():
-    stream.update_filter()
-    if stream.users or stream.keywords:
-        stream.statuses.dynamic_filter()
-    else:
-        logger.error("Can't start stream with no keywords or users")
-
-def stop_stream():
-    stream.disconnect()

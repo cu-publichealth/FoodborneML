@@ -8,19 +8,14 @@ from twython.exceptions import TwythonError
 from sqlalchemy.exc import OperationalError
 
 from foodbornenyc.models.documents import Tweet
-from foodbornenyc.models.models import get_db_session
 from foodbornenyc.db_settings import twitter_config
 from foodbornenyc.sources.twitter.util \
     import tweet_to_Tweet, user_to_TwitterUser, place_to_Location,\
-           reset_location_cache
+           reset_location_cache, twitter, db
 
 from foodbornenyc.util.util import sec_to_hms, get_logger, xuni
 logger = get_logger(__name__, level="INFO")
 
-twitter = Twython(twitter_config['consumer_key'],
-    twitter_config['consumer_secret'],
-    twitter_config['access_token'],
-    twitter_config['access_token_secret'])
 
 search_terms = [
     '#foodpoisoning',
@@ -40,14 +35,13 @@ def make_query(keywords):
         query = ' OR '.join(keywords)
         results = twitter.search(q=query)
         tweets = results['statuses']
-    except TwythonError:
+    except TwythonError as e:
         logger.warning("Twython Error. Skipping this request")
         tweets = []
     return tweets
 
 def query_twitter(how_long=0, interval=5):
     """ Interface function """
-    db = get_db_session()
     reset_location_cache()
     # can send 180 requests per 15 min = 5 sec
     start = time()

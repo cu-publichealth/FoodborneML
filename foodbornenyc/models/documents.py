@@ -42,7 +42,7 @@ from foodbornenyc.models.metadata import metadata
 from foodbornenyc.models.locations import Location
 from foodbornenyc.models.users import TwitterUser
 
-from foodbornenyc.util.util import get_logger
+from foodbornenyc.util.util import get_logger, xuni
 logger = get_logger(__name__)
 
 
@@ -264,23 +264,25 @@ class Tweet(object):
     def __init__(self,
                  text=None,
                  id_str=None,
-                 in_reply_to_status_id_str=None,
-                 in_reply_to_user_id_str=None,
+                 in_reply_to=None,
                  user=None,
                  lang=None,
                  created_at=None,
                  location=None):
-        self.text = text
-        self.id = str(id_str)
-        self.in_reply_to_status_id_str = str(in_reply_to_status_id_str)
-        self.in_reply_to_user_id_str = str(in_reply_to_user_id_str)
+        self.text = xuni(text)
+        self.id = id_str
+        self.in_reply_to = in_reply_to
         self.lang = lang
         if created_at:
             self.created_at = datetime.strptime(created_at, self.created_format)
         else: self.created_at = None
         self.location = location
         self.user = user
-        self.document = Document(str(id_str))
+        self.document = Document(id_str)
+
+    def __repr__(self):
+        return u"<Tweet(%s)>" % self.id
+
 
 tweets = Table('tweets', metadata,
                Column('id', String(64), primary_key=True),
@@ -292,8 +294,8 @@ tweets = Table('tweets', metadata,
                Column('user_id', String(64),
                       ForeignKey('twitter_users.id', name='fk_user_tweets')),
                Column('lang', Unicode),
-               Column('in_reply_to_status_id_str', String(64)),
-               Column('in_reply_to_user_id_str', String(64)),
+               Column('in_reply_to_id', String(64),
+                      ForeignKey('tweets.id', name='fk_reply_tweets')),
                Column('created_at', DateTime),
                Column('location_id', String(255*6),
                       ForeignKey('locations.id', name='fk_loc_tweets')))
@@ -301,8 +303,9 @@ tweets = Table('tweets', metadata,
 mapper(Tweet, tweets,
        properties={
            'location': relation(Location, backref=backref('tweets')),
-           'user': relation(TwitterUser, backref=backref('tweets'))
+           'user': relation(TwitterUser, backref=backref('tweets')),
+           'replies': relation(Tweet,
+               backref=backref('in_reply_to', remote_side=tweets.columns['id']))
        })
-TwitterUser.tweets = relation("Tweet", back_populates="twitter_user")
 
 documentable(Tweet, 'document')

@@ -14,7 +14,7 @@ geocode_config = {
 }
 
 yelp_classify_config = {
-    'model_file': 'foodbornenyc/pipelines/models/yelp_sick_logreg.pkl',
+    'model_file': 'foodbornenyc/pipelines/models/sick_logreg_best.pkl',
     'days_back': 7,
     'verbosity': 1
 }

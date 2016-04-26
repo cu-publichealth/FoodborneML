@@ -1,0 +1,26 @@
+{% extends 'layout.html' %}
+
+{% block content %}
+    <link type="text/css" rel="stylesheet" href="../static/css/yelp_review.css?q=13732" type="text/css" media="screen" charset="utf-8"/>
+    <script src="../static/js/search.js?q=16543"></script>
+    <div class="container-fluid">
+    	<div class="row">
+                <div class="col-lg-12">
+                    <h1 class="page-header">{{reviewtype}} Results</h1>
+                </div>
+        </div>
+        <!-- Search Options -->
+        {% include "/searchbar.html" %}
+        <!-- Reviews -->
+        <div class="mcontainer">
+            <div class="review-back">
+            </div>
+            <div class="reviews-wrapper">
+                {% for review in reviews %}
+                    <!-- Include the appropriate html review file -->
+                    {% include get_review_file(review.reviewtype) %}
+                {% endfor %}
+            </div>
+        </div>
+   	</div>
+{% endblock %}

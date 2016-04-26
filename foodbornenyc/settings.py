@@ -18,3 +18,7 @@ yelp_classify_config = {
     'days_back': 7,
     'verbosity': 1
 }
+
+yelp_classify_config_with_negation = {
+    'model_file': 'foodbornenyc/pipelines/models/yelp_sick_logreg_neg.pkl'
+}

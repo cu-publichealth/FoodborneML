@@ -66,7 +66,7 @@ def test_classify_time(classify):
     #takes difference of earliest and latest timestamps
     start = min([float(doc.fp_pred_time.strftime("%s.%f")) for doc in query])
     end =     max([float(doc.fp_pred_time.strftime("%s.%f")) for doc in query])
-    assert end - start <= .2
+    assert end - start <= 2
 
 # @patch('foodbornenyc.methods.yelp_classify.get_db_session')
 # def test_obvious_triggers(db_session, classify):

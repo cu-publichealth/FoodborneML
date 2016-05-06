@@ -1,0 +1,28 @@
+.yelp-row:nth-child(even) {
+    background-color: #f2f2f2
+}
+
+.row.yelp-row {
+    margin: 5px;
+}
+
+.business-review-name {
+    margin-left: 15px;
+    font-weight:bold;
+}
+
+.yelp-review-content {
+    min-width: 500px;
+    width: 80%;
+}
+
+.review-score {
+    max-width: 50px;
+    overflow: hidden;
+    padding: 0;
+}
+
+.yelp-review-box {
+	margin-left: 0px;
+}
+

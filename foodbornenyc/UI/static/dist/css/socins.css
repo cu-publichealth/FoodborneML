@@ -1,0 +1,81 @@
+.mmenu {
+	display: table;
+	width: 95%;
+	
+	margin-left: auto;
+	margin-right: auto;
+
+	  padding: 5px;
+	  margin-bottom: 10px;
+	  background-color: #f5f5f5;
+	  border: 1px solid #e3e3e3;
+	  border-radius: 4px;
+	  -webkit-box-shadow: inset 0 1px 1px rgba(0, 0, 0, .05);
+			  box-shadow: inset 0 1px 1px rgba(0, 0, 0, .05);
+}
+.mmenu > div {
+	display: table-row;
+
+}
+.mmenu > div >div {
+	display: table-cell;
+	text-align: center;
+	/*border: 1px solid black;*/
+}
+
+@media screen and (max-width: 1000px) {
+	.mmenu {
+		display: block;
+		float: left;
+		width: auto;
+		border: none;
+	}
+	.mmenu > div {
+		display: block;
+	}
+	.mmenu > div > div {
+		border: none;
+		padding-right: 10px;
+		display: block;
+		text-align: center;
+	}
+}
+
+
+.mfooter(
+	display:block;
+	background: lightgrey; 
+	margin-right: 0px !important;
+	margin-left: 0px !important;
+	border-top: 1px solid #ddd;
+	border-bottom-right-radius: 3px;
+	border-bottom-left-radius: 3px;
+);
+
+.typeahead.dropdown-menu{
+	overflow-y:auto;
+	visibility:visible;
+	opacity:1;
+	max-height:400px
+}
+
+.container{width:1000px}
+.jumbotron{margin-bottom:0;background-color:inherit}
+.banner{background:url('/images/nyc_dohmh_banner.png') no-repeat;position:relative}
+.banner h2{position:absolute;top:0;right:20px;color:white}
+#survey h3{margin-top:0}
+.thanks-container{display:none}
+
+
+
+.has-error input[type=text], 
+.has-error input[type=email],
+.has-error .control-label,
+.has-error .help-block,
+.has-error select {
+  border-color: #2f2f2f;
+  -webkit-box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075);
+  box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075);
+
+  color: orange;
+}

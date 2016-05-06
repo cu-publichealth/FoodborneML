@@ -1,0 +1,33 @@
+/* Header */
+.navbar-static-top {
+	margin-bottom: 0;
+	background-color: black;
+	background: linear-gradient(to right, #286090, #204d74 100%, black)
+}
+
+/* Table css */
+th {
+	margin: 2px !important;
+	padding: 2px !important;
+}
+
+/*footer css*/
+.Row
+{
+    display: table;
+    width: 100%; /*Optional*/
+    table-layout: fixed; /*Optional*/
+    border-spacing: 10px; /*Optional*/
+    background: linear-gradient(to left, #204d74, white 80%, white);
+    height:50px !important;
+}
+
+.Column
+{
+    display: table-cell;
+    width: 100%;
+}
+
+.page-header {
+    text-align:center;
+}

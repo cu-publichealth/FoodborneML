@@ -12,5 +12,6 @@ Contains the ipython notebooks. I added pretty much everything under the sun her
 - **TrainingDataAllValues.xlsx** contains everything from dohmh, but **only** for the training data (~1300 reviews).
 - **Mult/** contains everything for the **Multiple** classifier, including training data, old classifier test predictions, new classifier test predictions and feature weights, etc. I tried to rename things more intuitively for you guys, but let me know if you have any questions! The "_small" versions of certain files contain the ~1300 reviews used for development
 - **Sick/** same as above for the **Sick** classifier
-## best_classifiers/
+
+##best_classifiers/
 Contains the top **Sick** and **Multiple** classifiers

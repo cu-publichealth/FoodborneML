@@ -8,6 +8,7 @@ from sqlalchemy.sql.expression import text
 import foodbornenyc.models.models as models
 from foodbornenyc.models.businesses import Business, business_category_table
 from foodbornenyc.models.documents import YelpReview, Tweet, Document
+from foodbornenyc.models.users import TwitterUser
 from foodbornenyc.models.locations import Location
 from foodbornenyc.models.metadata import metadata
 

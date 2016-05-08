@@ -1,12 +1,14 @@
 {% extends 'layout.html' %}
 
 {% block content %}
-    <link type="text/css" rel="stylesheet" href="../static/css/yelp_review.css?q=13732" type="text/css" media="screen" charset="utf-8"/>
-    <script src="../static/js/search.js?q=16543"></script>
+    {% set thr, sortby, num_results, page, start, end = searchparams %}
+    <link type="text/css" rel="stylesheet" href="../static/css/yelp_review.css?q=13779" type="text/css" media="screen" charset="utf-8"/>
+    <link type="text/css" rel="stylesheet" href="../static/css/review_table.css?q=1500010" type="text/css" media="screen" charset="utf-8"/>
+    <script src="../static/js/search.js?q=166999"></script>
     <div class="container-fluid">
     	<div class="row">
                 <div class="col-lg-12">
-                    <h1 class="page-header">{{reviewtype}} Results</h1>
+                    <h1 id="results-{{reviewtype}}"class="page-header">{{reviewtype}} Results</h1>
                 </div>
         </div>
         <!-- Search Options -->
@@ -20,6 +22,20 @@
                     <!-- Include the appropriate html review file -->
                     {% include get_review_file(review.reviewtype) %}
                 {% endfor %}
+
+                <!-- If not first page, include "prev" button -->
+                <div id="next-prev-page">
+                    {% if page > 1 %}
+                        <div style="width:10% !important;" class="prev-page-div">
+                          <button type="button" class="prev-page btn btn-primary btn-lg" style="margin-left: auto; margin-right: auto; margin-top:40px;" id="prev-page-{{ searchtype }}-{{ page }}" onclick="prev(this.id);">Prev</button>
+                        </div>
+                    {% endif %}
+
+                    <!-- Include next page no matter what -->
+                    <div style="width:10% !important;" class="next-page-div">
+                      <button type="button" class="next-page btn btn-primary btn-lg" style="margin-left: auto; margin-right: auto; margin-top:40px;" id="next-page-{{ searchtype}}-{{ page }}" onclick="next(this.id);">Next</button>
+                    </div>
+                </div>
             </div>
         </div>
    	</div>

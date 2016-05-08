@@ -1,0 +1,18 @@
+.next-page-div {
+    display:inline;
+    margin-top: 0;
+}
+
+.prev-page-div {
+    display:inline;
+    margin-top: 0;
+}
+
+div#next-prev-page {
+    float: right;
+    margin-bottom:15px;
+}
+.next-page, .prev-page{
+    margin-top: 15px;
+}
+

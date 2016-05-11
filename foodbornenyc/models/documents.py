@@ -281,7 +281,7 @@ class Tweet(object):
         self.document = Document(id_str)
 
     def __repr__(self):
-        return u"<Tweet(%s, %s)>" % (self.id, self.text)
+        return u"<Tweet(%s, %s)>" % (self.id[-4:], self.text[:35])
 
 
 tweets = Table('tweets', metadata,

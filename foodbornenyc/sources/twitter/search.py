@@ -29,14 +29,14 @@ search_terms = [
     '"the runs"'
 ]
 
-def make_query(keywords):
+def search(keywords, since_id=None, count=100):
     """ Take keywords and Twython object and return back the statuses"""
+    query = ' OR '.join(keywords)
     try:
-        query = ' OR '.join(keywords)
-        results = twitter.search(q=query)
+        results = twitter.search(q=query, since_id=since_id, count=count)
         tweets = results['statuses']
     except TwythonError as e:
-        logger.warning("Twython Error. Skipping this request")
+        logger.warning("Twython Error for query '%s'" % query)
         tweets = []
     return tweets
 
@@ -50,7 +50,7 @@ def query_twitter(how_long=0, interval=5):
     # keeping track of this ourselves saves many db hits
     # if we don't specify go indefinitely
     while time() - start < how_long:
-        tweets = make_query(search_terms)
+        tweets = search(search_terms, last_tweet_id)
         if not tweets: # if we dont get anything back, sleep and try again
             sleep(interval)
             continue
@@ -59,6 +59,7 @@ def query_twitter(how_long=0, interval=5):
         try:
             db.add_all([db.merge(tweet_to_Tweet(t)) for t in tweets])
             db.commit()
+            last_tweet_id = tweets[0]['id_str']
         except OperationalError:
             pass
         sleep(interval)

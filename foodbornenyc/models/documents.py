@@ -265,6 +265,7 @@ class Tweet(object):
                  text=None,
                  id_str=None,
                  in_reply_to=None,
+                 retweeted_status=None,
                  user=None,
                  lang=None,
                  created_at=None,
@@ -272,6 +273,7 @@ class Tweet(object):
         self.text = xuni(text)
         self.id = id_str
         self.in_reply_to = in_reply_to
+        self.retweet_of = retweeted_status
         self.lang = lang
         if created_at:
             self.created_at = datetime.strptime(created_at, self.created_format)
@@ -296,6 +298,8 @@ tweets = Table('tweets', metadata,
                Column('lang', Unicode),
                Column('in_reply_to_id', String(64),
                       ForeignKey('tweets.id', name='fk_reply_tweets')),
+               Column('retweet_of_id', String(64),
+                      ForeignKey('tweets.id', name='fk_retweeted_tweets')),
                Column('created_at', DateTime),
                Column('location_id', String(255*6),
                       ForeignKey('locations.id', name='fk_loc_tweets')))
@@ -304,7 +308,11 @@ mapper(Tweet, tweets,
        properties={
            'location': relation(Location, backref=backref('tweets')),
            'user': relation(TwitterUser, backref=backref('tweets')),
+           'retweets': relation(Tweet,
+               foreign_keys=[tweets.columns['retweet_of_id']],
+               backref=backref('retweet_of', remote_side=tweets.columns['id'])),
            'replies': relation(Tweet,
+               foreign_keys=[tweets.columns['in_reply_to_id']],
                backref=backref('in_reply_to', remote_side=tweets.columns['id']))
        })
 

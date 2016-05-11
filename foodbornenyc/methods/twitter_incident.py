@@ -95,10 +95,12 @@ class Incident():
         elif not self.active():
             return False
 
-        # check if tweet is on source user's timeline
+        # check if tweet is on source user's timeline or is retweet of source
         if (tweet.user.id == self.source.user.id or
                 (tweet.in_reply_to and tweet.in_reply_to.user and
-                tweet.in_reply_to.user.id == self.source.user.id)):
+                tweet.in_reply_to.user.id == self.source.user.id) or
+                (tweet.retweet_of and tweet.retweet_of.user and
+                tweet.retweet_of.user.id == self.source.user.id)):
             return True
 
         # check if tweet is in the conversation tree
@@ -167,7 +169,11 @@ def receive_tweet(incidents, search_queue, tweet):
 def track_incidents():
     incidents = []
     search_queue = Queue()
+    import json
     def rec(tweet):
+        with open("tweets.json", "a") as myfile:
+            json.dump(tweet, myfile)
+
         receive_tweet(incidents, search_queue, tweet_to_Tweet(tweet))
 
     stream.set_function(rec)

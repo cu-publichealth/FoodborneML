@@ -56,9 +56,18 @@ def tweet_to_Tweet(tweet, select_fields=tweet_fields):
     info['text'] = xuni(tweet['text']) # convert to unicode for emoji
     info['location'] = place_to_Location(tweet['place'])
     info['user'] = user_to_TwitterUser(tweet['user'])
+
+    if ('retweeted_status' in tweet and tweet['retweeted_status'] is not None):
+        info['retweeted_status'] = \
+            db.query(Tweet).get(tweet['retweeted_status']['id_str']) or \
+            Tweet(id_str=tweet['retweeted_status']['id_str'])
+
     if ('in_reply_to_status_id_str' in tweet and
             tweet['in_reply_to_status_id_str'] is not None):
-        info['in_reply_to'] = Tweet(id_str=tweet['in_reply_to_status_id_str'])
+        info['in_reply_to'] = \
+            db.query(Tweet).get(tweet['in_reply_to_status_id_str']) or \
+            Tweet(id_str=tweet['in_reply_to_status_id_str'])
+
     return Tweet(**info)
 
 def user_to_TwitterUser(user, select_fields=user_fields):

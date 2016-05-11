@@ -5,7 +5,6 @@ Twitter Incident Creator
 from foodbornenyc.sources.twitter.stream import stream, print_tweet_json
 from foodbornenyc.sources.twitter.util import db, tweet_to_Tweet
 from datetime import timedelta, datetime
-import pprint
 
 search_terms = [
     '#foodpoisoning',
@@ -18,6 +17,8 @@ search_terms = [
     'diarrhea',
     '"the runs"'
 ]
+
+#search_terms = ['foodbornenyc']
 
 class Incident():
     """ A data abstraction that keeps naive track of groups of tweets that might
@@ -88,16 +89,18 @@ def incident_tweet(tweet):
     """ Classifier for if a tweet is worth creating an incident for. """
     # currently checks if matches keywords
     for kw in search_terms:
-        if kw.replace('"', '') in tweet.text:
+        if kw.replace('"', '') in tweet.text.lower():
             return True
 
     return False
 
+histo = [0]
 def receive_tweet(incidents, tweet):
     """ Take a tweet and process it, possibly adding it to an incident or
     creating a new one out of it """
+    global histo, maxlen
     tweet = db.merge(tweet)
-    print tweet
+    print "Received tweet " + str(tweet)
     offered = False
     outdated_users = False
     first_inactive_inc = None
@@ -115,25 +118,36 @@ def receive_tweet(incidents, tweet):
         # try to add the tweet to an incident. if added and it brings a new user
         # to the table, prepare to update the tracked users list
         if inc.offer_tweet(tweet):
+            print "Found incident for tweet"
             offered = True
-            if (tweet.user not in stream.users or (
+            newlen = len(inc.tweets)
+            if len(histo) < newlen:
+                histo.append(0)
+            histo[newlen-2] -= 1
+            histo[newlen-1] += 1
+            if (tweet.user.id not in stream.users or (
                     tweet.in_reply_to and tweet.in_reply_to.user and 
-                    tweet.in_reply_to.user not in stream.users)):
+                    tweet.in_reply_to.user.id not in stream.users)):
                 outdated_users = True
 
     if offered:
         db.add(tweet)
     elif incident_tweet(tweet):
+        print "Created incident for tweet"
         db.add(tweet)
         incidents.append(Incident(tweet))
+        histo[0] += 1
         outdated_users = True
 
     # the only time users aren't outdated is if this tweet is thrown away or
     # if it's added to an incident without introducing a new user
     if outdated_users:
         stream.users = set.union(*[inc.users_to_track() for inc in incidents])
-        stream.update_filter()
-    print incidents
+        print "Updating users to " + str(stream.users)
+        stream.disconnect()
+        stream.start()
+    print histo
+    # print [str(len(i.tweets)) + " " + str(len(i.users)) for i in incidents]
 
 def track_incidents():
     incidents = []

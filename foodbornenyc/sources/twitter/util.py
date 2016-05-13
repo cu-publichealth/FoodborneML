@@ -1,3 +1,4 @@
+import re
 from twython import Twython
 from foodbornenyc.db_settings import twitter_config
 from foodbornenyc.models.documents import Tweet
@@ -65,7 +66,7 @@ def tweet_to_Tweet(tweet, select_fields=tweet_fields):
 
     # pymssql does not support emoji yet; see
     # https://github.com/pymssql/pymssql/issues/300
-    info['text'] = strip_emoji(xuni(tweet['text']))
+    info['text'] = xuni(strip_emoji(tweet['text']))
     info['location'] = place_to_Location(tweet['place'])
     info['user'] = user_to_TwitterUser(tweet['user'])
 

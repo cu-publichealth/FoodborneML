@@ -17,7 +17,9 @@ from flask import render_template
 from flask_table import Table, Col, ButtonCol
 
 
-# Gets all yelp reviews at or above given threshold, within date range if given
+# Query database for yelp reviews matching search params
+# Returns list of UIYelpReview Objects
+# Searches for reviews at or above given threshold, within date range if given
 # Sorts by severity or date, defaults to severity
 # Limited to num_results, -1 for no limit
 def get_yelp_sick_reviews(echo, search_params):
@@ -49,7 +51,7 @@ def get_yelp_sick_reviews(echo, search_params):
     with db.begin():
         high_scores = high_scores = select([documents.c.id]).where(documents.c.fp_pred > threshold)
         query = (db.query(YelpReview).filter(YelpReview.id.in_(high_scores)).order_by(
-            YelpReview.id.asc()))
+            documents.c.fp_pred))
 
     ## Collect all reviews meeting query criteria
     ## -- if no num_results was given, loop repeats for all reviews

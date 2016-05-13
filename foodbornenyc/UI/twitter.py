@@ -16,6 +16,8 @@ from flask import render_template
 from flask_table import Table, Col, ButtonCol
 
 
+# Query database for all reviews matching search params
+# Return list of UITwitterReview objects
 def get_twitter_sick_reviews(echo, search_params):
     (threshold, sortby, num_results, page, start_date, end_date) = search_params
     threshold = (1.0 / 10) * threshold ## convert to tenths

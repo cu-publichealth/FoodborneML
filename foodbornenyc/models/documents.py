@@ -284,6 +284,10 @@ class Tweet(object):
 
         self.document = Document(id_str)
 
+    def __repr__(self):
+        return self.__unicode__()
+        #return self.__unicode__().encode('ascii', 'xmlcharrefreplace')
+
     def __unicode__(self):
         return u"<Tweet(%s, %s)>" % (self.id[-4:], self.text[:35])
 

@@ -19,40 +19,46 @@ from flask import render_template
 from flask.ext.navigation import Navigation
 from flask import request
 
+def get_sick_business_dict(search_params):
+	# Get all reviews with default settings -- 0.5 threshold, no limit
+	yelp_reviews = get_yelp_sick_reviews(echo=False, search_params=search_params)
+	# tweets = get_twitter_sick_reviews(echo=False, search_params=DEFAULT_SEARCH_PARAMS)
 
-def get_sick_business_dict():
-	yelp_reviews = get_yelp_sick_reviews(echo=False)
-	# tweets = get_twitter_sick_reviews(echo=False)
-
-	businesses = {}
-
+	# Now iterate through yelp reviews and add to dict of reviews indexed by business id
+	business_reviews = {}
 	for review in yelp_reviews:
 		## If Business in dict
-		if (review.business.id in businesses):
-			businesses[review.business.id].append(review)
+		if (review.business.id in business_reviews):
+			business_reviews[review.business.id].append(review)
 		## IF business not in dict
 		else:
-			businesses[review.business.id] = [review]
+			business_reviews[review.business.id] = [review]
 
+	# Tweets do not yet have support for businesses in db, so until then we can't use this
 	# for review in tweets:
 	# 	## Business in dict already
-	# 	if (review.business.id in businesses):
-	# 		businesses[review.business.id].append(review)
+	# 	if (review.business.id in business_reviews):
+	# 		business_reviews[review.business.id].append(review)
 	# 	## Business not in dict
 	# 	else:
-	# 		businesses[review.business.id] = [review]
+	# 		business_reviews[review.business.id] = [review]
 
-
-	business_tuples = []
 
 	## convert to list of tuples so that businesses can be sorted by
-	## number and severity of reviews
+	## number of reviews
+	business_tuples = []
+	for business in business_reviews:
+		avg_score  = 0
+		for review in business_reviews[business]:
+			avg_score += float(review.score)
+		avg_score = (1.0 * avg_score) / len(business_reviews[business])
 
-	##tuple format: (businessid, reviews_list)
-	for business in businesses:
-		business_tuples.append((businesses[business][0].business, businesses[business]))
-	print business_tuples[0]
+		##tuple format: (businessid, reviews_list, num_reviews, avg score)
+		business_tuples.append((business_reviews[business][0].business,
+								business_reviews[business],
+								len(business_reviews[business]),
+								avg_score))
 
-	business_tuples.sort(key=lambda t: len(t[1]), reverse=True)
-	print business_tuples[0]
+	# Sort businesses by number of reviews
+	business_tuples.sort(key=lambda t: t[2], reverse=True)
 	return business_tuples

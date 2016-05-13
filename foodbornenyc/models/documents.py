@@ -270,19 +270,21 @@ class Tweet(object):
                  lang=None,
                  created_at=None,
                  location=None):
-        self.text = xuni(text)
         self.id = id_str
-        self.in_reply_to = in_reply_to
-        self.retweet_of = retweeted_status
-        self.lang = lang
+        # don't set any of the fields that are None; this way, when an object
+        # is merged with another in the db, the db info isn't overwritten
+        if text: self.text = xuni(text)
+        if in_reply_to: self.in_reply_to = in_reply_to
+        if retweeted_status: self.retweet_of = retweeted_status
+        if lang: self.lang = lang
         if created_at:
             self.created_at = datetime.strptime(created_at, self.created_format)
-        else: self.created_at = None
-        self.location = location
-        self.user = user
+        if location: self.location = location
+        if user: self.user = user
+
         self.document = Document(id_str)
 
-    def __repr__(self):
+    def __unicode__(self):
         return u"<Tweet(%s, %s)>" % (self.id[-4:], self.text[:35])
 
 

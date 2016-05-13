@@ -50,23 +50,39 @@ def get_tweet_json(id_str):
         logger.warning(e)
     return {}
 
+def strip_emoji(text):
+    emoji_pattern = re.compile("["
+        u"\U0001F600-\U0001F64F"  # emoticons
+        u"\U0001F300-\U0001F5FF"  # symbols & pictographs
+        u"\U0001F680-\U0001F6FF"  # transport & map symbols
+        u"\U0001F1E0-\U0001F1FF"  # flags (iOS)
+        "]+", flags=re.UNICODE)
+    return emoji_pattern.sub(r'', text)
+
 def tweet_to_Tweet(tweet, select_fields=tweet_fields):
     """ Take tweet json and convert into a Tweet object """
     info = {k:v for (k,v) in tweet.items() if k in select_fields}
-    info['text'] = xuni(tweet['text']) # convert to unicode for emoji
+
+    # pymssql does not support emoji yet; see
+    # https://github.com/pymssql/pymssql/issues/300
+    info['text'] = strip_emoji(xuni(tweet['text']))
     info['location'] = place_to_Location(tweet['place'])
     info['user'] = user_to_TwitterUser(tweet['user'])
 
+    # Create blank tweet objects for other tweets related to this tweet.
+    # In later processing, a db.merge will be done to this tweet, which'll
+    # populate these fields with whatever already exists in the db or session.
+
+    # note: do NOT prematurely do a db.merge() -- that'll add this tweet to the
+    # session and end up with duplicates & key conflicts when committing later.
+    # this also applies to the location & user we set above.
     if ('retweeted_status' in tweet and tweet['retweeted_status'] is not None):
         info['retweeted_status'] = \
-            db.query(Tweet).get(tweet['retweeted_status']['id_str']) or \
             Tweet(id_str=tweet['retweeted_status']['id_str'])
 
     if ('in_reply_to_status_id_str' in tweet and
             tweet['in_reply_to_status_id_str'] is not None):
-        info['in_reply_to'] = \
-            db.query(Tweet).get(tweet['in_reply_to_status_id_str']) or \
-            Tweet(id_str=tweet['in_reply_to_status_id_str'])
+        info['in_reply_to'] = Tweet(id_str=tweet['in_reply_to_status_id_str'])
 
     return Tweet(**info)
 
@@ -119,9 +135,9 @@ def _fill_location_bbox(l, box):
     l.bbox_height  = (box[2][1]-box[0][1])
 
 def _fill_location_address(l, address):
-    l.line1 = address['address']
-    l.city = address['city']
-    l.country = address['country']
-    l.longitude = address['lng']
-    l.latitude = address['lat']
+    if 'address' in address: l.line1 = address['address']
+    if 'city' in address: l.city = address['city']
+    if 'country' in address: l.country = address['country']
+    if 'lng' in address: l.longitude = address['lng']
+    if 'lat' in address: l.latitude = address['lat']
 

@@ -110,13 +110,22 @@ class Incident():
 
 def incident_tweet(tweet):
     """ Classifier for if a tweet is worth creating an incident for. """
-    # currently does nothing
-    return True
+    # currently just denies retweets
+    return (tweet.retweet_of is None)
     # check if matching keywords
     # for kw in search_terms:
     #     if kw.replace('"', '') in tweet.text.lower():
     #         return True
     # return False
+
+histo = [0]
+def update_histo(oldlen, newlen):
+    if len(histo) < newlen: histo.extend([0] * (newlen - len(histo)))
+    if oldlen > 0: histo[oldlen-1] -= 1
+    histo[newlen-1] += 1
+
+def get_histo():
+    return histo
 
 last_search_time = 0
 search_interval = 5
@@ -126,7 +135,7 @@ def receive_tweet(incidents, search_queue, tweet):
     global last_search_time, search_interval
 
     tweet = db.merge(tweet)
-    logger.info("Received tweet %s" % tweet)
+    logger.info("Received %s" % tweet)
     offered = False
     first_inactive_inc = None
 
@@ -141,15 +150,18 @@ def receive_tweet(incidents, search_queue, tweet):
 
         # try to add the tweet to an incident.
         if inc.offer_tweet(tweet):
-            logger.info("Found incident %s for %s" % (inc, tweet))
+            logger.info("Found %s for %s" % (inc, tweet))
             # TODO: check if it's okay to just discard this tweet because
             # incidents will find the tweet themselves when they backfill
             offered = True
+            newlen = len(inc.tweets) + len(inc.stray_tweets)
+            update_histo(newlen-1, newlen)
 
     # make incidents for any tweets unrelated to current incidents
     if not offered and incident_tweet(tweet):
         inc = Incident(tweet)
         incidents.append(inc)
+        update_histo(0, 1)
         search_queue.put(inc)
         logger.info("Created incident for %s" % tweet)
 
@@ -157,12 +169,15 @@ def receive_tweet(incidents, search_queue, tweet):
     if time() - last_search_time >= search_interval:
         next_incident = search_queue.get()
         logger.info("Doing backfill on %s" % next_incident)
+        oldlen = len(next_incident.tweets) + len(next_incident.stray_tweets)
         next_incident.backfill_tweets()
         db.commit()
+        newlen = len(next_incident.tweets) + len(next_incident.stray_tweets)
+        update_histo(oldlen, newlen)
         if next_incident.active:
             search_queue.put(next_incident)
         last_search_time = time()
-    logger.info("%s incidents total" % len(incidents))
+    logger.info("%s incidents: %s" % (len(incidents), get_histo()))
 
 def track_incidents(incidents=[]):
     search_queue = Queue()

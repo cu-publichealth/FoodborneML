@@ -51,22 +51,19 @@ def get_tweet_json(id_str):
         logger.warning(e)
     return {}
 
-def strip_emoji(text):
-    emoji_pattern = re.compile("["
-        u"\U0001F600-\U0001F64F"  # emoticons
-        u"\U0001F300-\U0001F5FF"  # symbols & pictographs
-        u"\U0001F680-\U0001F6FF"  # transport & map symbols
-        u"\U0001F1E0-\U0001F1FF"  # flags (iOS)
-        "]+", flags=re.UNICODE)
-    return emoji_pattern.sub(r'', text)
+def strip_suppl_unicode(text):
+    # strips https://codepoints.net/supplementary_multilingual_plane
+    # emoji, obscure shapes, rare multiling. chars, unassigned symbols
+    pattern = re.compile(u"[\U00010000-\U000FFFFF]+", flags=re.UNICODE)
+    return pattern.sub(r'', text)
 
 def tweet_to_Tweet(tweet, select_fields=tweet_fields):
     """ Take tweet json and convert into a Tweet object """
     info = {k:v for (k,v) in tweet.items() if k in select_fields}
 
-    # pymssql does not support emoji yet; see
+    # pymssql does not support past basic multilingual plane yet so we strip
     # https://github.com/pymssql/pymssql/issues/300
-    info['text'] = xuni(strip_emoji(tweet['text']))
+    info['text'] = xuni(strip_suppl_unicode(tweet['text']))
     info['location'] = place_to_Location(tweet['place'])
     info['user'] = user_to_TwitterUser(tweet['user'])
 

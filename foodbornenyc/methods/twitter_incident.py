@@ -28,11 +28,11 @@ search_terms = [
 class Incident():
     """ A data abstraction that keeps naive track of groups of tweets that might
     point at related pieces of info. Starting from a source tweet, an Incident
-    will request certain users to be tracked and accept later tweets deemed
-    relevant to this incident. An incident will ultimately consist in a source
-    tweet, the user's timeline going back and forward a specified period of
-    time, and all the tweets in the timeframe in conversation with the timeline
-    tweets. """
+    will be able to backfill any tweets mentioning or from the author of that
+    source tweet. This captures anything directed to the author, anything in
+    the conversation tree of any tweet from the author. In addition, it takes
+    tweets (from the streamer) and judges if those tweets should be added to
+    it. """
     def __init__(self, source, timeframe=timedelta(days=7)):
         """ Create an incident from a source tweet """
         self.source = source
@@ -53,25 +53,22 @@ class Incident():
         self.last_tweet_id = self.tweets[-1].id
 
     def backfill_tweets(self):
-        # get all new tweets from the author of the source
-        # commit those tweets and any tweets offered to this incident from the
-        # streamer to the db
+        """ Get all tweets from the author of the source tweet since the last
+        time this method was called, adding them to the database. """
         name = self.source.user.screen_name
-        query = ['@'+name, 'from:'+name]
-        new_tweets = search(query, self.last_tweet_id)
+        new_tweets = search(['@'+name, 'from:'+name], self.last_tweet_id)
         if not new_tweets:
             return
-        logger.info("Backfilling %s tweets having %s, last id %s"
-                % (len(new_tweets), query, self.last_tweet_id))
+        logger.info("Backfilling %s tweets for %s, last id %s"
+                % (len(new_tweets), name, self.last_tweet_id))
 
         new_tweets = [db.merge(tweet_to_Tweet(t)) for t in new_tweets]
-        other_stray = [t for t in self.stray_tweets if t not in new_tweets]
-        logger.info("%s other stray tweets" % len(other_stray))
-        db.add_all(other_stray)
-        db.add_all(new_tweets)
-        db.commit()
+        new_ids = [t.id for t in new_tweets]
+        stray = [db.merge(t) for t in self.stray_tweets if t.id not in new_ids]
+        logger.info("%s other stray tweets" % len(stray))
+        # doing the db.merge already added the tweets
 
-        self.tweets.extend(other_stray)
+        self.tweets.extend(stray)
         self.tweets.extend(new_tweets)
         self.update_last_tweet_id()
         self.stray_tweets = []
@@ -113,12 +110,13 @@ class Incident():
 
 def incident_tweet(tweet):
     """ Classifier for if a tweet is worth creating an incident for. """
-    # currently checks if matches keywords
-    for kw in search_terms:
-        if kw.replace('"', '') in tweet.text.lower():
-            return True
-
-    return False
+    # currently does nothing
+    return True
+    # check if matching keywords
+    # for kw in search_terms:
+    #     if kw.replace('"', '') in tweet.text.lower():
+    #         return True
+    # return False
 
 last_search_time = 0
 search_interval = 5
@@ -141,39 +139,34 @@ def receive_tweet(incidents, search_queue, tweet):
                 first_inactive_inc = inc
             break
 
-        # try to add the tweet to an incident. if added and it brings a new user
-        # to the table, prepare to update the tracked users list
+        # try to add the tweet to an incident.
         if inc.offer_tweet(tweet):
             logger.info("Found incident %s for %s" % (inc, tweet))
             # TODO: check if it's okay to just discard this tweet because
             # incidents will find the tweet themselves when they backfill
             offered = True
 
+    # make incidents for any tweets unrelated to current incidents
     if not offered and incident_tweet(tweet):
         inc = Incident(tweet)
         incidents.append(inc)
         search_queue.put(inc)
         logger.info("Created incident for %s" % tweet)
 
+    # every search-interval seconds, backfill the oldest-updated incident
     if time() - last_search_time >= search_interval:
-        # update tweets on the oldest-updated incident
         next_incident = search_queue.get()
         logger.info("Doing backfill on %s" % next_incident)
         next_incident.backfill_tweets()
+        db.commit()
         if next_incident.active:
             search_queue.put(next_incident)
         last_search_time = time()
-    # print [str(len(i.tweets)) + " " + str(len(i.users)) for i in incidents]
     logger.info("%s incidents total" % len(incidents))
 
-def track_incidents():
-    incidents = []
+def track_incidents(incidents=[]):
     search_queue = Queue()
-    import json
     def rec(tweet):
-        with open("tweets.json", "a") as myfile:
-            json.dump(tweet, myfile)
-
         receive_tweet(incidents, search_queue, tweet_to_Tweet(tweet))
 
     stream.set_function(rec)

@@ -40,6 +40,7 @@ from sqlalchemy.orm import mapper, backref, relation, class_mapper
 
 from foodbornenyc.models.metadata import metadata
 from foodbornenyc.models.locations import Location
+from foodbornenyc.models.users import TwitterUser
 
 from foodbornenyc.util.util import get_logger
 logger = get_logger(__name__)
@@ -273,14 +274,13 @@ class Tweet(object):
         self.id = str(id_str)
         self.in_reply_to_status_id_str = str(in_reply_to_status_id_str)
         self.in_reply_to_user_id_str = str(in_reply_to_user_id_str)
-        self.user_id= str(user['id_str']) if user else None
         self.lang = lang
         if created_at:
             self.created_at = datetime.strptime(created_at, self.created_format)
         else: self.created_at = None
         self.location = location
+        self.user = user
         self.document = Document(str(id_str))
-        # TODO: Add TwitterUser class and foreign key to it
 
 tweets = Table('tweets', metadata,
                Column('id', String(64), primary_key=True),
@@ -289,7 +289,8 @@ tweets = Table('tweets', metadata,
                                        name='fk_tweet_assoc_id'),
                             nullable=False),
                Column('text', UnicodeText),
-               Column('user_id', String(64)),
+               Column('user_id', String(64),
+                      ForeignKey('twitter_users.id', name='fk_user_tweets')),
                Column('lang', Unicode),
                Column('in_reply_to_status_id_str', String(64)),
                Column('in_reply_to_user_id_str', String(64)),
@@ -299,7 +300,9 @@ tweets = Table('tweets', metadata,
 
 mapper(Tweet, tweets,
        properties={
-           'location': relation(Location, backref=backref('tweets'))
+           'location': relation(Location, backref=backref('tweets')),
+           'user': relation(TwitterUser, backref=backref('tweets'))
        })
+TwitterUser.tweets = relation("Tweet", back_populates="twitter_user")
 
 documentable(Tweet, 'document')

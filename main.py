@@ -43,7 +43,7 @@ def initdb():
     models.setup_db()
 
 from foodbornenyc.sources import yelp_fast
-from foodbornenyc.sources import twitter_search
+from foodbornenyc.sources.twitter import search as twitter_search
 @main.command()
 @click.option('-y', '--yelp', is_flag=True, help="update yelp")
 @click.option('-t', '--twitter', is_flag=True, help="Do twitter search")

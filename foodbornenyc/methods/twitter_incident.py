@@ -110,8 +110,7 @@ class Incident():
 
 def incident_tweet(tweet):
     """ Classifier for if a tweet is worth creating an incident for. """
-    # currently just denies retweets
-    return (tweet.retweet_of is None)
+    return True
     # check if matching keywords
     # for kw in search_terms:
     #     if kw.replace('"', '') in tweet.text.lower():
@@ -134,8 +133,11 @@ def receive_tweet(incidents, search_queue, tweet):
     creating a new one out of it """
     global last_search_time, search_interval
 
-    tweet = db.merge(tweet)
     logger.info("Received %s" % tweet)
+    # disregard retweets
+    if (tweet.retweet_of is not None): return
+
+    tweet = db.merge(tweet)
     offered = False
     first_inactive_inc = None
 

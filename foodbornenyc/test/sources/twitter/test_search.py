@@ -10,28 +10,31 @@ from twython.exceptions import TwythonError
 import foodbornenyc.test.sources.twitter.sample as sample
 
 @patch('foodbornenyc.sources.twitter.search.twitter')
-def test_make_query(twitter):
+def test_search(twitter):
     """ The correct query should be requested """
     keywords = ['food', 'stomach', 'disease']
     tweets = {'statuses': sample.tweets}
     twitter.search = Mock(return_value=tweets)
 
-    query = search.make_query(keywords)
+    query = search.search(keywords)
 
-    twitter.search.assert_called_with(q='food OR stomach OR disease')
+    twitter.search.assert_called_with(count=100,\
+                                      q='food OR stomach OR disease',\
+                                      since_id=None)
     assert query == sample.tweets
 
 @patch('foodbornenyc.sources.twitter.search.twitter')
-def test_make_query_failed(twitter):
+def test_search_failed(twitter):
     """ If there's an exception, fail gracefully """
     twitter.search = Mock(side_effect=TwythonError("Can't reach Twitter"))
 
-    query = search.make_query(['food'])
+    query = search.search(['food'])
 
     assert query == []
 
 @patch('foodbornenyc.sources.twitter.search.twitter')
-@patch('foodbornenyc.sources.twitter.search.get_db_session')
+# make query_twitter use the test db
+@patch('foodbornenyc.sources.twitter.search.db', new_callable=get_db_session)
 @patch('foodbornenyc.sources.twitter.search.time')
 @patch('foodbornenyc.sources.twitter.search.sleep')
 def test_query_twitter(sleep, time, db_session, twitter):
@@ -42,9 +45,6 @@ def test_query_twitter(sleep, time, db_session, twitter):
     tweet_sequence = [{'statuses': [sample.tweets[0]]},
             {'statuses': [sample.tweets[1]]}]
     twitter.search = Mock(side_effect=tweet_sequence)
-
-    # make query_twitter use the test db
-    db_session.return_value = get_db_session()
 
     # make time.time return canned values and time.sleep do nothing
     time_sequence = [5, 5, 10, 15]

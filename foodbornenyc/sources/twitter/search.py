@@ -49,6 +49,7 @@ def query_twitter(how_long=0, interval=5):
     # make sure we don't create duplicates.
     # keeping track of this ourselves saves many db hits
     # if we don't specify go indefinitely
+    last_tweet_id = 0
     while time() - start < how_long:
         tweets = search(search_terms, last_tweet_id)
         if not tweets: # if we dont get anything back, sleep and try again

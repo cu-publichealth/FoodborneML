@@ -51,8 +51,7 @@ def testYelpReview(db):
 def testTweet(db):
     """ Tweet construction should work, including creating documents """
     sample = { 'id_str':'2', 'text':"I hate food!",
-               'in_reply_to_user_id_str': '233', 'lang': 'en',
-               'in_reply_to_status_id_str': '449' }
+               'in_reply_to': Tweet("Food.", "29"), 'lang': 'en' }
     sample_optional = { 'user': TwitterUser(234),
                         'location': Location(line1='11 Main St', city='Boston'),
                         'created_at': 'Tue Feb 23 23:40:54 +0000 2015' }
@@ -64,23 +63,21 @@ def testTweet(db):
     db.commit()
 
     # test immediate fields
-    tweet = db.query(Tweet).first()
-    assert tweet.id == sample['id_str']
+    tweet = db.query(Tweet).get(sample['id_str'])
     assert tweet.user_id == None
     assert tweet.created_at == None
     assert tweet.location == None
     assert tweet.text == sample['text']
-    assert tweet.in_reply_to_user_id_str == sample['in_reply_to_user_id_str']
+    assert tweet.in_reply_to == sample['in_reply_to']
     assert tweet.lang == sample['lang']
-    assert tweet.in_reply_to_status_id_str == \
-        sample['in_reply_to_status_id_str']
 
     # test optinal fields
     db.delete(tweet)
+    db.commit()
     db.add(Tweet(**sample2))
     db.commit()
 
-    tweet = db.query(Tweet).first()
+    tweet = db.query(Tweet).get(sample2['id_str'])
     assert tweet.location == sample2['location']
     assert tweet.user.id == sample2['user'].id
 

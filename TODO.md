@@ -25,6 +25,7 @@
     - This should probably be done through error handling since `twython` uses errors for api limits
 - [ ] Streaming
 - [ ] Location search strategies
+- *** IMPORTANT NOTE:*** Twitter geo and place coordinate pairs aren't in the same format.  Ones [lat,lon] and the other is [lon,lat]
     - [ ] User location
     - [ ] Past Tweet locations going back some amount (maybe one month) and some threshold (percentage or count)
     - [ ] Locations of followers/following? Probably unreliable

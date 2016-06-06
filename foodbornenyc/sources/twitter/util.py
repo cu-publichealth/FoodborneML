@@ -11,6 +11,9 @@ import foodbornenyc.sources.foursquare_geo as geo
 from foodbornenyc.util.util import get_logger, xuni
 logger = get_logger(__name__, level="INFO")
 
+# TODO @teffland: Read this link and make sure location tracking gets the lat/lon pair order correctly 
+# http://support.gnip.com/articles/filtering-twitter-data-by-location.html
+
 db = get_db_session()
 twitter = Twython(twitter_config['consumer_key'],
     twitter_config['consumer_secret'],

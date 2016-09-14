@@ -77,14 +77,23 @@ This install guide is currently just intended for Mac OSX in the Terminal. Note 
 ### Best Practice References
 
 - Follow [PEP #0008](https://www.python.org/dev/peps/pep-0008/) for style and documentation guidance
-- When developing features, use the [Github Flow](https://guides.github.com/introduction/flow/index.html). It's lightweight and conceptually simple but will encapsulate all of your work
-    1. Basically each feature you develop will be on it's own, explicitly-named branch.
-    2. Commit within your own branch often
-    3. When you're ready to merge it with `master`, issue a pull request
-    4. We will code review your changes and make sure it passes all testing
+- When developing features, we will use a subset of the [Github Flow](https://www.atlassian.com/git/tutorials/comparing-workflows/gitflow-workflow). It's lightweight and conceptually simple but will encapsulate all of your work.
+    * We will maintain two main branches: production and development
+    * Production (master) will only be for stable releases
+    * Development (dev) will be the main working branch (think of this as master for dev purposes)
+    * Everytime you want to build a feature, create a new branch from dev
+        * Name your branch explicitly, eg "tom-ui-refactoring"
+        * Commit to your branch often
+        * Push your local commits to the central repo branch whenever you finish a work-session
+    * When you're ready to merge your feature back into dev, issue a pull request
+        * We will review your changes and make sure it passes all testing
+    * When we are ready to productionalize a version of the dev branch, it'll get merged with master
+
+- I highly suggest using [git-flow](http://danielkummer.github.io/git-flow-cheatsheet/) to make using this workflow super convenient
 - We'll use TravisCI for continuous integration on pull requests.  This saves us a lot of work. See [this](http://stackoverflow.com/questions/32422264/jenkins-vs-travis-ci) for an explanation
 - Write your unit tests with `pytests`
 - Use `pylint` for some helpful automated code review
+** TODO (teffland) ** - add testing coverage metrics
 - Eventually, we'll use [Sphinx](http://www.sphinx-doc.org/en/stable/) and [ReadTheDocs](https://readthedocs.org/) for automated documentation
 
 #### Some useful references

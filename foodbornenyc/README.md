@@ -51,9 +51,7 @@ If totally necessary, writing explicit SQL can be done, but please make note of 
 `pipes` define individual components of processing data. This is similar in design to scikit-learn and MALLET (in Java) and should be thought of as analogues to the stateless functions of functional programming, allowing for the DRY modular composition of these individual components for use in `pipelines` discussed below. 
 
 For example, a pipe might define a certain way of tokenizing some input.
-<```python
 
-```>
 
 
 ### <a name="pipelines"></a>Pipelines

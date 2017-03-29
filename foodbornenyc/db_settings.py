@@ -3,10 +3,10 @@ Database Settings
 """
 
 database_config = {
-    'user': 'johnnybananas',
-    'password': 'placeholder_password',
-    'dbhost': 'toy.db',
-    'dbbackend':'sqlite'
+    'user': 'teffland',
+    'password': 'uN1$ucks',
+    'dbhost': '128.59.22.184:1433/dohmh_dev',
+    'dbbackend':'mssql+pymssql'
 }
 
 twitter_config = {
@@ -20,8 +20,3 @@ foursquare_config = {
     'client_id': '',
     'client_secret': ''
 }
-
-try:
-    from foodbornenyc.my_db_settings import *
-except:
-    pass

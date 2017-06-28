@@ -11,7 +11,7 @@ from util import hms
 random_seed = 0
 
 print 'Getting data...',
-data = setup_baseline_data(train_regime='silver', test_regime='silver', random_seed=random_seed)
+data = setup_baseline_data(train_regime='gold', test_regime='silver', random_seed=random_seed)
 train_data = data['train_data']
 U = data['U']
 print 'Done'
@@ -28,7 +28,7 @@ random_hyperparams = {
 
 score_kwds = {
     'xs':train_data['text'],
-    'ys':train_data['is_foodborne'],
+    'ys':train_data['is_multiple'],
     'bs':train_data['is_biased'],
     'U':U,
     'fit_weight_kwd':'logreg__sample_weight',
@@ -38,7 +38,7 @@ score_kwds = {
 
 print 'Starting Experiments...'
 t0 = time()
-experiments = random_search(model, random_hyperparams, 'best_logreg_4.pkl', **score_kwds)
-print 'Done {}:{}:{} seconds. Writing out experiments'.format(*hms(time()-t0))
-joblib.dump(experiments, 'logreg_hyperparam_experiments_4.pkl')
+experiments = random_search(model, random_hyperparams, 'best_lr_mult_gold.pkl', **score_kwds)
+print 'Done {}:{}:{} total runtime. Writing out experiments'.format(*hms(time()-t0))
+joblib.dump(experiments, 'lr_mult_gold_experiments.pkl')
 print 'All done'

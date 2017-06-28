@@ -45,11 +45,18 @@ def setup_baseline_data(train_regime='gold', test_regime='gold', random_seed=0, 
     else:
         raise ValueError, "Regime must be 'silver' or 'gold'"
 
+    print old_biased['is_foodborne'].unique()
+    print old_unbiased['is_foodborne'].unique()
+    print new_biased['is_foodborne'].unique()
+    print new_unbiased['is_foodborne'].unique()
     old_biased['is_foodborne'] = old_biased['is_foodborne'].map({'Yes':1, 'No':0})
     old_unbiased['is_foodborne'] = old_unbiased['is_foodborne'].map({'Yes':1, 'No':0})
     new_biased['is_foodborne'] = new_biased['is_foodborne'].map({'Yes':1, 'No':0})
     new_unbiased['is_foodborne'] = new_unbiased['is_foodborne'].map({'Yes':1, 'No':0})
-
+    print old_biased['is_foodborne'].unique()
+    print old_unbiased['is_foodborne'].unique()
+    print new_biased['is_foodborne'].unique()
+    print new_unbiased['is_foodborne'].unique()
     old_biased['is_multiple'] = old_biased['is_multiple'].map({'Yes':1, 'No':0})
     old_unbiased['is_multiple'] = old_unbiased['is_multiple'].map({'Yes':1, 'No':0})
     new_biased['is_multiple'] = new_biased['is_multiple'].map({'Yes':1, 'No':0})

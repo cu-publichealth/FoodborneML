@@ -7,17 +7,17 @@ from sklearn.externals import joblib
 
 def setup_baseline_data(train_regime='gold', test_regime='gold', random_seed=0, silver_size=10000):
     test_split_date = datetime.strptime('1/1/2017', '%d/%m/%Y')
-    biased = pd.read_csv('data/biased.csv', encoding='utf8')
+    biased = pd.read_csv('../data/biased.csv', encoding='utf8')
     biased.date = pd.to_datetime(biased.date)
     old_biased = biased[biased['date'] < test_split_date]
     new_biased = biased[biased['date'] >= test_split_date]
-    
-    unbiased = pd.read_csv('data/unbiased.csv', encoding='utf8')
+
+    unbiased = pd.read_csv('../data/unbiased.csv', encoding='utf8')
     unbiased.date = pd.to_datetime(unbiased.date)
     U = len(unbiased) + len(biased)
-    
+
     if train_regime == 'gold':
-        old_unbiased = pd.read_excel('data/historical_unbiased.xlsx', encoding='utf8')
+        old_unbiased = pd.read_excel('../data/historical_unbiased.xlsx', encoding='utf8')
         old_unbiased.date = pd.to_datetime(old_unbiased.date)
     elif train_regime == 'silver':
         old_unbiased = unbiased[unbiased.date < test_split_date]
@@ -27,15 +27,15 @@ def setup_baseline_data(train_regime='gold', test_regime='gold', random_seed=0, 
         old_unbiased['is_multiple'] = 'No'
     else:
         raise ValueError, "Regime must be 'silver' or 'gold'"
-        
+
     if test_regime == 'gold':
         print '[WARNING] THE TEST DATA IS NOT CORRECT FOR THIS REGIME YET'
-        old_unbiased = pd.read_excel('data/historical_unbiased.xlsx', encoding='utf8')
+        old_unbiased = pd.read_excel('../data/historical_unbiased.xlsx', encoding='utf8')
         old_unbiased.date = pd.to_datetime(old_unbiased.date)
         # for now we are passing dummy test data
         new_unbiased = pd.DataFrame(old_unbiased)
     elif test_regime == 'silver':
-        unbiased = pd.read_csv('data/unbiased.csv', encoding='utf8')
+        unbiased = pd.read_csv('../data/unbiased.csv', encoding='utf8')
         unbiased.date = pd.to_datetime(unbiased.date)
         new_unbiased = unbiased[unbiased.date >= test_split_date]
         new_unbiased = new_unbiased.sample(silver_size, random_state=random_seed)
@@ -44,17 +44,17 @@ def setup_baseline_data(train_regime='gold', test_regime='gold', random_seed=0, 
         new_unbiased['is_multiple'] = 'No'
     else:
         raise ValueError, "Regime must be 'silver' or 'gold'"
-    
+
     old_biased['is_foodborne'] = old_biased['is_foodborne'].map({'Yes':1, 'No':0})
     old_unbiased['is_foodborne'] = old_unbiased['is_foodborne'].map({'Yes':1, 'No':0})
     new_biased['is_foodborne'] = new_biased['is_foodborne'].map({'Yes':1, 'No':0})
     new_unbiased['is_foodborne'] = new_unbiased['is_foodborne'].map({'Yes':1, 'No':0})
-    
+
     old_biased['is_multiple'] = old_biased['is_multiple'].map({'Yes':1, 'No':0})
     old_unbiased['is_multiple'] = old_unbiased['is_multiple'].map({'Yes':1, 'No':0})
     new_biased['is_multiple'] = new_biased['is_multiple'].map({'Yes':1, 'No':0})
     new_unbiased['is_multiple'] = new_unbiased['is_multiple'].map({'Yes':1, 'No':0})
-    
+
     return {
         'train_data': {
             'text':old_biased['text'].tolist() + old_unbiased['text'].tolist(),
@@ -102,7 +102,7 @@ def importance_weighted_precision_recall(y_trues, y_pred_probs, is_biased, thres
     bias_term = bias_rate * (1./Ur) * (in_Up & biased_and_Ur).sum() # in_Up is same as preds
     unbias_term = (1. - bias_rate) * (1./Ur) * (in_Up & unbiased_and_Ur).sum()
     recall = bias_term + unbias_term
-    
+
     return precision, recall
 
 def importance_weighted_pr_curve(y_trues, y_pred_probs, is_biased):
@@ -136,7 +136,7 @@ def score_model(model, xs, ys, bs, U, fit_weight_kwd, n_cv_splits, random_seed):
         dev_text = np.array(xs)[dev_idx]
         dev_ys = np.array(ys)[dev_idx]
         dev_is_biased = np.array(bs)[dev_idx]
-        
+
         train_importance_weights = calc_train_importance_weights(train_is_biased, U)
         model.fit(train_text, train_ys, **{fit_weight_kwd:train_importance_weights})
         scored_devs = model.predict_proba(dev_text)[:,1]

@@ -32,11 +32,11 @@ def setup_baseline_data(train_regime='gold', test_regime='gold', random_seed=0, 
         # print '[WARNING] THE TEST DATA IS NOT CORRECT FOR THIS REGIME YET'
         # old_unbiased = pd.read_excel('../data/historical_unbiased.xlsx', encoding='utf8')
         new_unbiased = pd.read_excel('../data/current_nonbiased.xlsx', encoding='utf8')
-        new_unbiased.rename(columns={'Is_Foodborne':'is_foodborne',
-                              'Is_Multiple_Foodborne':'is_multiple',
-                              'created':'date'},
-                            inplace=True)
-        new_unbiased.is_multiple = new_unbiased.is_multiple.map({'Maybe':'No','No':'No'})
+        # new_unbiased.rename(columns={'Is_Foodborne':'is_foodborne',
+        #                       'Is_Multiple_Foodborne':'is_multiple',
+        #                       'created':'date'},
+        #                     inplace=True)
+        # new_unbiased.is_multiple = new_unbiased.is_multiple.map({'Maybe':'No','No':'No'})
         new_unbiased.date = pd.to_datetime(new_unbiased.date)
 
     elif test_regime == 'silver':

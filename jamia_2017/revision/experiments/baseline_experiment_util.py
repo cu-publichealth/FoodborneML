@@ -25,8 +25,10 @@ def setup_baseline_data(train_regime='gold', test_regime='gold', random_seed=0, 
         # assume the biased complement are negative examples
         old_unbiased['is_foodborne'] = 'No'
         old_unbiased['is_multiple'] = 'No'
+    elif train_regime == 'biased':
+        old_unbiased = pd.DataFrame(columns=old_biased.columns)
     else:
-        raise ValueError, "Regime must be 'silver' or 'gold'"
+        raise ValueError, "Regime must be 'silver', 'gold', or 'biased'"
 
     if test_regime == 'gold':
         # print '[WARNING] THE TEST DATA IS NOT CORRECT FOR THIS REGIME YET'
@@ -47,6 +49,8 @@ def setup_baseline_data(train_regime='gold', test_regime='gold', random_seed=0, 
         # assume the biased complement are negative examples
         new_unbiased['is_foodborne'] = 'No'
         new_unbiased['is_multiple'] = 'No'
+    elif test_regime == 'biased':
+        new_unbiased = pd.DataFrame(columns=new_biased.columns)
     else:
         raise ValueError, "Regime must be 'silver' or 'gold'"
 
@@ -78,7 +82,7 @@ def setup_baseline_data(train_regime='gold', test_regime='gold', random_seed=0, 
 
 def calc_train_importance_weights(is_biased, U):
     B = float(sum(is_biased))
-    Bc = len(is_biased) - B
+    Bc = len(is_biased) - B + 1e-15 # for stability when all are biased
 #     print 'U:{}, B:{}, Bc:{}'.format(U,B, Bc)
     w_B = 1./U
     w_Bc = (1.-(B/U))*(1./Bc)

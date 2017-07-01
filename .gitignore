@@ -11,3 +11,7 @@ foodbornenyc/my_db_settings.py
 toy.db
 jamia_2017/official/*.xlsx
 jamia_2017/official/*.csv
+website
+jamia_2017/revision/data
+jamia_2017/revision/experiments/chainer_experiments
+

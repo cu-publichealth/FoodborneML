@@ -32,6 +32,7 @@ model_setup:
         cnn_n_filters_per: 20
         cnn_pooling: "max"
         cnn_activation_func: "leaky_relu"
+        dropout_prob: .25
 
 trainer_setup:
     setup_file: "chainer_trainer_setup.py"

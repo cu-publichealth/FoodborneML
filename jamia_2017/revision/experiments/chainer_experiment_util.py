@@ -1,3 +1,5 @@
+from chainer_monitor.run_experiment import run_experiment
+
 def recursive_set_with_slice(base, grid, i):
     for gkey in grid:
         if type(base[gkey]) is dict:

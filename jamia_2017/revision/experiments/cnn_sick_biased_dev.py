@@ -1,7 +1,6 @@
 import numpy.random as npr
 import numpy as np
 import yaml
-from chainer_monitor.run_experiment import run_experiment
 from chainer_experiment_util import chainer_random_search
 
 base = yaml.load(open('cnn_setup_sick_biased_config.yaml'))

@@ -17,7 +17,7 @@ targeted_points = {
     },
     'trainer_setup':{
         'setup_config': {
-            'adam_alpha':.001,
+            'adam_alpha':.[.001]*N,
             'l2_coef':npr.choice(np.logspace(-3,-1,1000), N)
         }
     }

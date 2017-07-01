@@ -21,11 +21,14 @@ class WeightedLossModel(Chain):
         precisions, recalls, thresholds = importance_weighted_pr_curve(
             ys, y_pred_probs.data[:,1], is_biased)
         aupr = area_under_pr_curve(precisions, recalls)
+        half_threshold = (np.abs(thresholds-.5)).argmin()
         reporter.report({
             'precisions':precisions,
             'recalls':recalls,
             'thresholds':thresholds,
-            'aupr':aupr
+            'aupr':aupr,
+            'precision@t={0:0.2f}'.format(thresholds[half_threshold]):precisons[half_threshold],
+            'recall@t={0:0.2f}'.format(thresholds[half_threshold]):recalls[half_threshold]
         }, self)
         return loss
 

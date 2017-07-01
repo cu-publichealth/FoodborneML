@@ -27,7 +27,7 @@ class WeightedLossModel(Chain):
             'recalls':recalls,
             'thresholds':thresholds,
             'aupr':aupr,
-            'precision@t={0:0.2f}'.format(thresholds[half_threshold]):precisons[half_threshold],
+            'precision@t={0:0.2f}'.format(thresholds[half_threshold]):precisions[half_threshold],
             'recall@t={0:0.2f}'.format(thresholds[half_threshold]):recalls[half_threshold]
         }, self)
         return loss

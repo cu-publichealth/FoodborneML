@@ -1,5 +1,6 @@
 import numpy.random as npr
 import numpy as np
+import yaml
 from chainer_monitor.run_experiment import run_experiment
 from chainer_experiment_util import chainer_random_search
 

@@ -11,7 +11,7 @@ targeted_points = {
     'model_setup':{
         'setup_config':{
             'cnn_ngrams':[[1,2,3]]*N,
-            'cnn_n_filters_per':npr.choice([25,50,100], N),
+            'cnn_n_filters_per':npr.choice([25,50], N),
             'dropout_prob':npr.uniform(.2,.4, N)
         }
     },

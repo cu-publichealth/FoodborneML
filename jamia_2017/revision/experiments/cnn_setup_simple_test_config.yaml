@@ -39,8 +39,8 @@ trainer_setup:
     setup_config:
         # all arguments for the `setup` method provided in `setup_file`
         freeze_embeddings: true
-        batch_size: 64
-        max_examples: 64 # limit number of trainined examples with an int
+        batch_size: 256
+        max_examples: 1000 # limit number of trainined examples with an int
         adam_alpha: .005
         n_epoch: 50
         early_stop_patience: 5

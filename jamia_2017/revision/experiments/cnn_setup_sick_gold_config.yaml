@@ -1,0 +1,48 @@
+email: 'teffland@cs.columbia.edu'
+title: 'CNN gold'
+task: 'DOHMH: Yelp Sick'
+description: 'Uses an ngram convolution over the input doc'
+random_seed: 0
+results_dir_prefix: 'chainer_experiments/' # will be created if it doesn't exist
+
+mongo_config:
+     username: 'tom'
+     host: 'teffland.cs.columbia.edu'
+     database: 'experiments'
+     port: 27017
+
+data_setup:
+    setup_file: "chainer_data_setup.py"
+    setup_config:
+        # all arguments for the `setup` method provided in `setup_file`
+        response_key: "is_foodborne"
+        train_regime: "gold"
+        dev_portion: .2
+        lowercase: true
+        pretrained_vectors: "../data/word_vectors/trimmed_glove.840B.300d.txt"
+        normalize_vectors: true
+        trim_vector_file: false
+        split_random_seed: 0
+
+model_setup:
+    setup_file: "cnn_model_setup.py"
+    setup_config:
+        # all arguments for the `setup` method provided in `setup_file`
+        cnn_ngrams: [1, 2, 3]
+        cnn_n_filters_per: 20
+        cnn_pooling: "max"
+        cnn_activation_func: "leaky_relu"
+
+trainer_setup:
+    setup_file: "chainer_trainer_setup.py"
+    setup_config:
+        # all arguments for the `setup` method provided in `setup_file`
+        freeze_embeddings: true
+        batch_size: 256
+        max_examples: 'all' # limit number of trainined examples with an int
+        adam_alpha: .005
+        n_epoch: 50
+        early_stop_patience: 5
+        l2_coef: 1.
+        evaluation_trigger: [ 1, 'epoch'] #[ 50, 'iteration']
+        checkpoint_trigger: [ 1, 'epoch'] #[ 50, 'iteration']

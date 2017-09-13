@@ -1,23 +1,27 @@
 import numpy as np
 import pandas as pd
 from datetime import datetime
+import os.path as osp
 
 from sklearn.model_selection import StratifiedKFold
 from sklearn.externals import joblib
 
-def setup_baseline_data(train_regime='gold', test_regime='gold', random_seed=0, silver_size=10000):
+def setup_baseline_data(train_regime='gold', test_regime='gold',
+                        data_path='../data',
+                        random_seed=0, silver_size=10000):
     test_split_date = datetime.strptime('1/1/2017', '%d/%m/%Y')
-    biased = pd.read_csv('../data/biased.csv', encoding='utf8')
+    biased = pd.read_csv(osp.join(data_path, 'biased.csv'), encoding='utf8')
     biased.date = pd.to_datetime(biased.date)
     old_biased = biased[biased['date'] < test_split_date]
     new_biased = biased[biased['date'] >= test_split_date]
 
-    unbiased = pd.read_csv('../data/unbiased.csv', encoding='utf8')
+    unbiased = pd.read_csv(osp.join(data_path, 'unbiased.csv'), encoding='utf8')
     unbiased.date = pd.to_datetime(unbiased.date)
     U = len(unbiased) + len(biased)
 
     if train_regime == 'gold':
-        old_unbiased = pd.read_excel('../data/historical_unbiased.xlsx', encoding='utf8')
+        old_unbiased = pd.read_excel(osp.join(data_path, 'historical_unbiased.xlsx'),
+                                     encoding='utf8')
         old_unbiased.date = pd.to_datetime(old_unbiased.date)
     elif train_regime == 'silver':
         old_unbiased = unbiased[unbiased.date < test_split_date]
@@ -33,7 +37,8 @@ def setup_baseline_data(train_regime='gold', test_regime='gold', random_seed=0, 
     if test_regime == 'gold':
         # print '[WARNING] THE TEST DATA IS NOT CORRECT FOR THIS REGIME YET'
         # old_unbiased = pd.read_excel('../data/historical_unbiased.xlsx', encoding='utf8')
-        new_unbiased = pd.read_excel('../data/current_nonbiased.xlsx', encoding='utf8')
+        new_unbiased = pd.read_excel(osp.join(data_path, 'current_nonbiased.xlsx'),
+                                     encoding='utf8')
         # new_unbiased.rename(columns={'Is_Foodborne':'is_foodborne',
         #                       'Is_Multiple_Foodborne':'is_multiple',
         #                       'created':'date'},
@@ -42,7 +47,7 @@ def setup_baseline_data(train_regime='gold', test_regime='gold', random_seed=0, 
         new_unbiased.date = pd.to_datetime(new_unbiased.date)
 
     elif test_regime == 'silver':
-        unbiased = pd.read_csv('../data/unbiased.csv', encoding='utf8')
+        unbiased = pd.read_csv(osp.join(data_path, 'unbiased.csv'), encoding='utf8')
         unbiased.date = pd.to_datetime(unbiased.date)
         new_unbiased = unbiased[unbiased.date >= test_split_date]
         new_unbiased = new_unbiased.sample(silver_size, random_state=random_seed)
@@ -114,8 +119,8 @@ def importance_weighted_precision_recall(y_trues, y_pred_probs, is_biased, thres
 
     return precision, recall
 
-def importance_weighted_pr_curve(y_trues, y_pred_probs, is_biased):
-    thresholds = np.linspace(1, 0, 100)
+def importance_weighted_pr_curve(y_trues, y_pred_probs, is_biased, n_thresholds=100):
+    thresholds = np.linspace(1, 0, n_thresholds)
     precisions, recalls = [], []
     for t in thresholds:
         p, r = importance_weighted_precision_recall(y_trues, y_pred_probs, is_biased, t)

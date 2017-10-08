@@ -2,7 +2,7 @@
 
 This repo contains the results for the publication "Discovering Foodborne Illness in Online Restaurant Reviews", to appear in JAMIA 2017.
 
-`Official Results.ipynb` contains the reproducible experiments from the paper.
+`Official Results.ipynb` contains the reproducible experiments from the paper. (To actually be able to run the experiments you need the data, which can be requested from [Tom Effland](mailto:teffland.cs.columbia.edu).)
 
 `sick_results.csv` and `mult_results.csv` contain the final performance metrcis from `Official Results.ipynb` (These correspond to Tables 1 and 2 in the paper, respectively)
 
@@ -14,7 +14,7 @@ This repo contains the results for the publication "Discovering Foodborne Illnes
 
 To use them in practice:
 
-1. In terminal: `gunzip final_models`
+1. In terminal: `gunzip final_models/*`
 2. To use them in a python script, you’ll need `scikit-learn 18.2` and `numpy`.
 
 To load them, use:

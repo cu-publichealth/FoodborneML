@@ -1,0 +1,2 @@
+name,aupr,aupr_ci_b,aupr_ci_t,biased_f1,biased_f1_ci_b,biased_f1_ci_t,biased_precision,biased_recall,mixed_f1,mixed_f1_ci_b,mixed_f1_ci_t,mixed_precision,mixed_recall
+Prototype Sick,0.49905601531,0.483496586834,0.508534060091,0.661325564457,0.64363631471,0.681052076467,0.505286588759,0.95679662803,0.660363101846,0.645339238114,0.666393404095,0.50416373002,0.95679662803

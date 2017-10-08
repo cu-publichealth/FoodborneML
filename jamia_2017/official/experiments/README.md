@@ -10,7 +10,7 @@ This folder contains the supporting code for `../Offical\ Results.ipynb`.
 
 The other files are the model definitions and hyperparam search experiments:
 
-<Models>:
+`<Models>`:
 * `lr` == Logistic Regression
 * `rf` == Random Forest
 * `svm` == SVM

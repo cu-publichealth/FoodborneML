@@ -39,8 +39,3 @@ And to get the prediction probabilities for the positive class, use:
 	mult_pred_pos_probs = yelp_mult_classifier.predict_proba(numpy_array_of_utf8_or_str)[:,1]
 ```
 
-```python
-from sklearn.externals import joblib
-
-
-

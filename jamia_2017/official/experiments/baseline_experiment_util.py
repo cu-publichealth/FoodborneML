@@ -15,13 +15,14 @@ from sklearn.model_selection import StratifiedKFold
 from sklearn.metrics import confusion_matrix
 from sklearn.externals import joblib
 
-def setup_baseline_data(train_regime='gold', 
+def setup_baseline_data(train_regime='gold',
                         test_regime='gold',
                         data_path='../data',
-                        random_seed=0, 
-                        silver_size=10000):
+                        random_seed=0,
+                        silver_size=10000,
+                        test_split_date='1/1/2017'):
     """ Read in the cleaned data, split it up and format for evaluation. """
-    test_split_date = datetime.strptime('1/1/2017', '%d/%m/%Y')
+    test_split_date = datetime.strptime(test_split_date, '%m/%d/%Y')
     biased = pd.read_csv(osp.join(data_path, 'biased.csv'), encoding='utf8')
     biased.date = pd.to_datetime(biased.date)
     old_biased = biased[biased['date'] < test_split_date]
@@ -200,12 +201,12 @@ def ci(xbar, samples, confidence_level=.95):
     ci_top = xbar - np.percentile(diffs, 100.*alpha)
     return ci_bottom, ci_top
 
-def iw_bootstrap_score_ci(trues, preds, is_biased, scoring_func, 
-                          B=1000, confidence_level=.95, 
+def iw_bootstrap_score_ci(trues, preds, is_biased, scoring_func,
+                          B=1000, confidence_level=.95,
                           random_seed=None,
                           **scoring_func_kwds):
     """ Compute a bootstrapped estimate of the importance weighted model score and stratified resampling.
-    
+
     An intuitive and practical guide to bootstrap estimation:
     https://ocw.mit.edu/courses/mathematics/18-05-introduction-to-probability-and-statistics-spring-2014/readings/MIT18_05S14_Reading24.pdf
     """
@@ -218,7 +219,7 @@ def iw_bootstrap_score_ci(trues, preds, is_biased, scoring_func,
     for i in range(B):
         print '\rB: {}/{}'.format(i,B),
         if len(nonbiased_idxs):
-            sample = np.hstack([npr.choice(biased_idxs, len(biased_idxs)), 
+            sample = np.hstack([npr.choice(biased_idxs, len(biased_idxs)),
                                 npr.choice(nonbiased_idxs, len(nonbiased_idxs))])
         else:
             sample = npr.choice(biased_idxs, len(biased_idxs))
@@ -244,7 +245,7 @@ def bootstrap_aupr_ci(trues, preds, is_biased, random_seed=None, **bootstrap_kwd
                               random_seed=random_seed,
                               **bootstrap_kwds)
 
-def subplot_confusion_matrix(cm, classes, 
+def subplot_confusion_matrix(cm, classes,
                              fig, ax,
                              precision=None, recall=None, f1_ci=None,
                              normalize=False,
@@ -253,7 +254,7 @@ def subplot_confusion_matrix(cm, classes,
     """
     This function prints and plots the confusion matrix.
     Normalization can be applied by setting `normalize=True`.
-    
+
     Modified from http://scikit-learn.org/stable/auto_examples/model_selection/plot_confusion_matrix.html#sphx-glr-auto-examples-model-selection-plot-confusion-matrix-py
     """
     im = ax.imshow(cm, interpolation='nearest', cmap=cmap)
@@ -300,53 +301,53 @@ def model_report(model, title, label_key, save_fname=None, test_data=None, **boo
     axs[0,0].set_xlabel('Recall')
     axs[0,0].set_ylabel('Precision')
     axs[0,0].legend(loc=8)
-    
+
     # plot out cms for mixed, biased, and nonbiased
     precision_m, recall_m = importance_weighted_precision_recall(y_trues, y_pred_probs, is_biased, .5)
     f1_ci_m = bootstrap_f1_ci(y_trues, y_pred_probs, is_biased, **bootstrap_kwds)
     cm = confusion_matrix(y_trues, y_preds)
-    subplot_confusion_matrix(cm, 
-                             ['Not Sick', 'Sick'], 
-                             fig, 
-                             axs[0,1], 
+    subplot_confusion_matrix(cm,
+                             ['Not Sick', 'Sick'],
+                             fig,
+                             axs[0,1],
                              title='Mixed Bias',
-                             precision=precision_m, 
-                             recall=recall_m, 
+                             precision=precision_m,
+                             recall=recall_m,
                              f1_ci=f1_ci_m[:3])
     # biased
-    precision_b, recall_b = importance_weighted_precision_recall(y_trues[is_biased], 
-                                                                 y_pred_probs[is_biased], 
+    precision_b, recall_b = importance_weighted_precision_recall(y_trues[is_biased],
+                                                                 y_pred_probs[is_biased],
                                                                 is_biased[is_biased], .5)
-    f1_ci_b = bootstrap_f1_ci(y_trues[is_biased], 
-                              y_pred_probs[is_biased], 
-                              is_biased[is_biased], 
+    f1_ci_b = bootstrap_f1_ci(y_trues[is_biased],
+                              y_pred_probs[is_biased],
+                              is_biased[is_biased],
                               **bootstrap_kwds)
     cm = confusion_matrix(y_trues[is_biased], y_preds[is_biased])
-    subplot_confusion_matrix(cm, 
-                             ['Not Sick', 'Sick'], 
-                             fig, 
-                             axs[1,0], 
+    subplot_confusion_matrix(cm,
+                             ['Not Sick', 'Sick'],
+                             fig,
+                             axs[1,0],
                              title='Biased',
-                             precision=precision_b, 
-                             recall=recall_b, 
+                             precision=precision_b,
+                             recall=recall_b,
                              f1_ci=f1_ci_b[:3])
     # nonbiased
     # there is no point to reporting precision, recall here since there are no positives
     # but we do it anyways in case the dataset were to change
-    precision, recall = importance_weighted_precision_recall(y_trues[~is_biased], 
-                                                             y_pred_probs[~is_biased], 
+    precision, recall = importance_weighted_precision_recall(y_trues[~is_biased],
+                                                             y_pred_probs[~is_biased],
                                                              is_biased[~is_biased], .5)
     cm = confusion_matrix(y_trues[~is_biased], y_preds[~is_biased])
-    subplot_confusion_matrix(cm, ['Not Sick', 'Sick'], fig, axs[1,1], 
+    subplot_confusion_matrix(cm, ['Not Sick', 'Sick'], fig, axs[1,1],
                              title="Nonbiased (all No's)",
                              precision=precision, recall=recall)
-    
+
     fig.suptitle(title + ' Test Report', fontsize=14)
     fig.tight_layout()
     fig.subplots_adjust(top=0.92)
     if save_fname:
         plt.savefig(save_fname+'_report.pdf')
-    
+
     # also plot the bootstrap historgrams to make sure they look ok
     fig2, axs2 = plt.subplots(1,3, figsize=(12,4))
     axs2[0].hist(samples, bins=100)
@@ -366,7 +367,7 @@ def model_report(model, title, label_key, save_fname=None, test_data=None, **boo
     fig2.subplots_adjust(top=0.85)
     if save_fname:
         plt.savefig(save_fname+'_bootstrap_hists.pdf')
-        
+
     return {
         'aupr':aupr,
         'aupr_ci':(aupr_ci_bottom, aupr_ci_top),
@@ -397,42 +398,42 @@ def prototype_model_report(trues, preds, is_biased, title, save_fname=None, **bo
     axs[0,0].set_xlabel('Recall')
     axs[0,0].set_ylabel('Precision')
     axs[0,0].legend(loc=8)
-    
+
     # plot out cms for mixed, biased, and nonbiased
     precision_m, recall_m = importance_weighted_precision_recall(y_trues, y_pred_probs, is_biased, .5)
     f1_ci_m = bootstrap_f1_ci(y_trues, y_pred_probs, is_biased, **bootstrap_kwds)
     cm = confusion_matrix(y_trues, y_preds)
-    subplot_confusion_matrix(cm, ['Not Sick', 'Sick'], fig, axs[0,1], 
+    subplot_confusion_matrix(cm, ['Not Sick', 'Sick'], fig, axs[0,1],
                              title='Mixed Bias',
                              precision=precision_m, recall=recall_m, f1_ci=f1_ci_m[:3])
     # biased
-    precision_b, recall_b = importance_weighted_precision_recall(y_trues[is_biased], 
-                                                             y_pred_probs[is_biased], 
+    precision_b, recall_b = importance_weighted_precision_recall(y_trues[is_biased],
+                                                             y_pred_probs[is_biased],
                                                              is_biased[is_biased], .5)
     f1_ci_b = bootstrap_f1_ci(y_trues[is_biased], y_pred_probs[is_biased], is_biased[is_biased], **bootstrap_kwds)
     cm = confusion_matrix(y_trues[is_biased], y_preds[is_biased])
-    subplot_confusion_matrix(cm, ['Not Sick', 'Sick'], fig, axs[1,0], 
+    subplot_confusion_matrix(cm, ['Not Sick', 'Sick'], fig, axs[1,0],
                              title='Biased',
                              precision=precision_b, recall=recall_b, f1_ci=f1_ci_b[:3])
     # nonbiased
     # there is no point to reporting precision, recall here since there are no positives
     # but we do it anyways in case the dataset were to change
-    precision, recall = importance_weighted_precision_recall(y_trues[~is_biased], 
-                                                             y_pred_probs[~is_biased], 
+    precision, recall = importance_weighted_precision_recall(y_trues[~is_biased],
+                                                             y_pred_probs[~is_biased],
                                                              is_biased[~is_biased], .5)
     cm = confusion_matrix(y_trues[~is_biased], y_preds[~is_biased])
-    subplot_confusion_matrix(cm, ['Not Sick', 'Sick'], fig, axs[1,1], 
+    subplot_confusion_matrix(cm, ['Not Sick', 'Sick'], fig, axs[1,1],
                              title="Nonbiased (all No's)",
                              precision=precision, recall=recall)
-    
-    
-    
+
+
+
     fig.suptitle(title + ' Test Report', fontsize=14)
     fig.tight_layout()
     fig.subplots_adjust(top=0.92)
     if save_fname:
         plt.savefig(save_fname+'_report.pdf')
-    
+
     # also plot the bootstrap historgrams to make sure they look ok
     fig2, axs2 = plt.subplots(1,3, figsize=(12,4))
     axs2[0].hist(samples, bins=100)
@@ -452,7 +453,7 @@ def prototype_model_report(trues, preds, is_biased, title, save_fname=None, **bo
     fig2.subplots_adjust(top=0.85)
     if save_fname:
         plt.savefig(save_fname+'_bootstrap_hists.pdf')
-        
+
     return {
         'aupr':aupr,
         'aupr_ci':(aupr_ci_bottom, aupr_ci_top),
@@ -468,12 +469,12 @@ def prototype_model_report(trues, preds, is_biased, title, save_fname=None, **bo
         'biased_f1_ci':f1_ci_b[1:3],
         'biased_f1_samples':f1_ci_b[3]
     }
-        
+
 def print_model_hyperparams(model, name):
     useful_params = {k:v for k,v in model.get_params().items() if '__' in k}
     print "*** {} Hyperparameters ***".format(name)
     pprint(useful_params)
-    
+
 def precision_at_recall(model, label_key, desired_recall, test_data=None):
     """
     Return the precision, recall, and threshold of a model that comes closest to the `desired_recall` value.
@@ -487,14 +488,14 @@ def precision_at_recall(model, label_key, desired_recall, test_data=None):
     closest = sorted(zip(ps, rs, ts), key=lambda x:abs(x[1]-desired_recall))[0]
     return closest + (closest[1]-desired_recall,)
 
-def pr_curves(model_list, title_list, main_title, label_key, 
+def pr_curves(model_list, title_list, main_title, label_key,
               dashes=[], xlim=(0,1), ylim=(0,1), figsize=(6,4),
               xticks=None, yticks=None,
               save_fname=None, test_data=None):
     """ Plot pr curves for some list of models. """
     y_trues = np.array(test_data[label_key])
     is_biased = np.array(test_data['is_biased'])
-    
+
     fig, ax = plt.subplots(1,1, figsize=figsize)
     for i, (model, title) in enumerate(zip(model_list, title_list)):
         y_preds = model.predict(test_data['text'])

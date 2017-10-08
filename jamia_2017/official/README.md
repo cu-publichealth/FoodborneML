@@ -14,10 +14,8 @@ This repo contains the results for the publication "Discovering Foodborne Illnes
 
 To use them in practice:
 
-1. In terminal: `gunzip final_models/*`
-2. To use them in a python script, you’ll need `scikit-learn 18.2` and `numpy`.
-
-To load them, use:
+1. You’ll need `scikit-learn 18.2` and `numpy`.
+2. To load them, use:
 
 ```python
 	from sklearn.externals import joblib
@@ -25,14 +23,14 @@ To load them, use:
 	yelp_mult_classifier = joblib.load(‘final_yelp_models/final_yelp_mult_model.gz’)
 ```
 
-To predict with them, use:
+3. To predict with them, use:
 
 ```python
 	sick_preds = yelp_sick_classifier.predict(numpy_array_of_utf8_or_str) 
 	mult_preds = yelp_mult_classifier.predict(numpy_array_of_utf8_or_str)
 ```
 
-And to get the prediction probabilities for the positive class, use:
+4. And to get the prediction probabilities for the positive class, use:
 
 ```python
 	sick_pred_pos_probs  = yelp_sick_classifier.predict_proba(numpy_array_of_utf8_or_str)[:,1]

@@ -1,0 +1,52 @@
+version: '3'
+
+services:
+  flask-app:
+    build: ./flask-app
+    command: gunicorn -w 2 --bind 0.0.0.0:8080 app:app -k gevent -c conf.py
+    expose:
+      - "8080"
+    volumes:
+      - ./flask-app:/usr/src/app
+    links:
+      - mongo
+  yelp-service:
+    build: ./yelp-service
+    volumes:
+     - ./yelp-service:/usr/src/app
+    links:
+     - mongo
+  yelp-classify:
+    build: ./yelp-classify
+    volumes:
+     - ./yelp-classify:/usr/src/app
+    links:
+     - mongo
+  twitter-service:
+    build: ./twitter-service
+    volumes:
+     - ./twitter-service:/usr/src/app
+    links:
+     - mongo
+  twitter-classify:
+    build: ./twitter-classify
+    volumes:
+     - ./twitter-classify:/usr/src/app
+    links:
+     - mongo
+  mongo:
+    image: mongo:3
+    volumes:
+     - ./data:/data/db
+  nginx:
+    image: nginx
+    links:
+     - flask-app
+    volumes:
+     - ./nginx/conf.d:/etc/nginx/conf.d
+     - ./nginx/ssl:/etc/ssl
+    ports:
+     - "443:443"
+
+
+

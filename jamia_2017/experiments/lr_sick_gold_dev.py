@@ -9,7 +9,6 @@ from lr_model import model
 from util import hms
 
 random_seed = 0
-
 print 'Getting data...',
 data = setup_baseline_data(train_regime='gold', test_regime='silver', random_seed=random_seed)
 train_data = data['train_data']

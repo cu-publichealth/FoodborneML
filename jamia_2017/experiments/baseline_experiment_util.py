@@ -23,12 +23,12 @@ def setup_baseline_data(train_regime='gold',
                         test_split_date='1/1/2017'):
     """ Read in the cleaned data, split it up and format for evaluation. """
     test_split_date = datetime.strptime(test_split_date, '%m/%d/%Y')
-    biased = pd.read_csv(osp.join(data_path, 'biased.csv'), encoding='utf8')
+    biased = pd.read_csv(osp.join(data_path, 'fixed_biased.csv'), encoding='utf8')
     biased.date = pd.to_datetime(biased.date)
     old_biased = biased[biased['date'] < test_split_date]
     new_biased = biased[biased['date'] >= test_split_date]
 
-    unbiased = pd.read_csv(osp.join(data_path, 'unbiased.csv'), encoding='utf8')
+    unbiased = pd.read_csv(osp.join(data_path, 'fixed_unbiased.csv'), encoding='utf8')
     unbiased.date = pd.to_datetime(unbiased.date)
     U = len(unbiased) + len(biased)
 
@@ -40,40 +40,40 @@ def setup_baseline_data(train_regime='gold',
         old_unbiased = unbiased[unbiased.date < test_split_date]
         old_unbiased = old_unbiased.sample(silver_size, random_state=random_seed)
         # assume the biased complement are negative examples
-        old_unbiased['is_foodborne'] = 'No'
-        old_unbiased['is_multiple'] = 'No'
+        old_unbiased.loc[:,'is_foodborne'] = 'No'
+        old_unbiased.loc[:,'is_multiple'] = 'No'
     elif train_regime == 'biased':
         old_unbiased = pd.DataFrame(columns=old_biased.columns)
     else:
         raise ValueError, "Regime must be 'silver', 'gold', or 'biased'"
 
     if test_regime == 'gold':
-        new_unbiased = pd.read_excel(osp.join(data_path, 'current_nonbiased.xlsx'),
+        new_unbiased = pd.read_excel(osp.join(data_path, 'fixed_current_nonbiased.xlsx'),
                                      encoding='utf8')
         new_unbiased.date = pd.to_datetime(new_unbiased.date)
 
     elif test_regime == 'silver':
-        unbiased = pd.read_csv(osp.join(data_path, 'unbiased.csv'), encoding='utf8')
+        unbiased = pd.read_csv(osp.join(data_path, 'fixed_unbiased.csv'), encoding='utf8')
         unbiased.date = pd.to_datetime(unbiased.date)
         new_unbiased = unbiased[unbiased.date >= test_split_date]
         new_unbiased = new_unbiased.sample(silver_size, random_state=random_seed)
         # assume the biased complement are negative examples
-        new_unbiased['is_foodborne'] = 'No'
-        new_unbiased['is_multiple'] = 'No'
+        new_unbiased.loc[:,'is_foodborne'] = 'No'
+        new_unbiased.loc[:,'is_multiple'] = 'No'
     elif test_regime == 'biased':
         new_unbiased = pd.DataFrame(columns=new_biased.columns)
     else:
         raise ValueError, "Regime must be 'silver' or 'gold'"
 
-    old_biased['is_foodborne'] = old_biased['is_foodborne'].map({'Yes':1, 'No':0})
-    old_unbiased['is_foodborne'] = old_unbiased['is_foodborne'].map({'Yes':1, 'No':0})
-    new_biased['is_foodborne'] = new_biased['is_foodborne'].map({'Yes':1, 'No':0})
-    new_unbiased['is_foodborne'] = new_unbiased['is_foodborne'].map({'Yes':1, 'No':0})
+    old_biased.loc[:,'is_foodborne'] = old_biased['is_foodborne'].map({'Yes':1, 'No':0})
+    old_unbiased.loc[:,'is_foodborne'] = old_unbiased['is_foodborne'].map({'Yes':1, 'No':0})
+    new_biased.loc[:,'is_foodborne'] = new_biased['is_foodborne'].map({'Yes':1, 'No':0})
+    new_unbiased.loc[:,'is_foodborne'] = new_unbiased['is_foodborne'].map({'Yes':1, 'No':0})
 
-    old_biased['is_multiple'] = old_biased['is_multiple'].map({'Yes':1, 'No':0})
-    old_unbiased['is_multiple'] = old_unbiased['is_multiple'].map({'Yes':1, 'No':0})
-    new_biased['is_multiple'] = new_biased['is_multiple'].map({'Yes':1, 'No':0})
-    new_unbiased['is_multiple'] = new_unbiased['is_multiple'].map({'Yes':1, 'No':0})
+    old_biased.loc[:,'is_multiple'] = old_biased['is_multiple'].map({'Yes':1, 'No':0})
+    old_unbiased.loc[:,'is_multiple'] = old_unbiased['is_multiple'].map({'Yes':1, 'No':0})
+    new_biased.loc[:,'is_multiple'] = new_biased['is_multiple'].map({'Yes':1, 'No':0})
+    new_unbiased.loc[:,'is_multiple'] = new_unbiased['is_multiple'].map({'Yes':1, 'No':0})
 
     return {
         'train_data': {
@@ -105,24 +105,32 @@ def importance_weighted_precision_recall(y_trues, y_pred_probs, is_biased, thres
     """ Calculate the precision and recall with bias correction. """
     # find the precision at this threshold
     in_Up = y_pred_probs >= threshold # same as predictions at this threshold
-    Up = in_Up.sum().astype(np.float32) + 1e-15 # for stability when there are no positive predictions
-    biased_and_Up = is_biased & in_Up
-    unbiased_and_Up = (~is_biased) & in_Up
-    bias_rate = sum(biased_and_Up)/Up
-    bias_term = bias_rate * (1./Up) * ((y_trues == 1) & biased_and_Up).sum()
-    unbias_term = (1. - bias_rate) * (1./Up) * ((y_trues == 1) & unbiased_and_Up).sum()
-    precision = bias_term + unbias_term
+    Up = in_Up.sum().astype(np.float32) # number of positive predictions
+    
+    if Up > 0.: # model has made some positive classifications
+        biased_and_Up = is_biased & in_Up
+        unbiased_and_Up = (~is_biased) & in_Up
+        p_bias_rate = sum(biased_and_Up)/Up
+        p_bias_term = p_bias_rate * (1./Up) * ((y_trues == 1) & biased_and_Up).sum()
+        p_unbias_term = (1. - p_bias_rate) * (1./Up) * ((y_trues == 1) & unbiased_and_Up).sum()
+        precision = p_bias_term + p_unbias_term
+    else: # model has no positive classifications, which means it's made no precision errors
+        precision = 1.
 
     # find recall at this threshold
     in_Ur = y_trues == 1 # same as true positives
-    Ur = in_Ur.sum().astype(np.float32) + 1e-15 # for stability when there are no positive examples
-    biased_and_Ur = is_biased & in_Ur
-    unbiased_and_Ur = (~is_biased) & in_Ur
-    bias_rate = sum(biased_and_Ur)/Ur
-    bias_term = bias_rate * (1./Ur) * (in_Up & biased_and_Ur).sum() # in_Up is same as preds
-    unbias_term = (1. - bias_rate) * (1./Ur) * (in_Up & unbiased_and_Ur).sum()
-    recall = bias_term + unbias_term
-
+    Ur = in_Ur.sum().astype(np.float32) # number of positive examples
+    if Ur > 0.: # there are positive examples
+        biased_and_Ur = is_biased & in_Ur
+        unbiased_and_Ur = (~is_biased) & in_Ur
+        r_bias_rate = sum(biased_and_Ur)/Ur
+        r_bias_term = r_bias_rate * (1./Ur) * (in_Up & biased_and_Ur).sum() # in_Up is same as preds
+        r_unbias_term = (1. - r_bias_rate) * (1./Ur) * (in_Up & unbiased_and_Ur).sum()
+        recall = r_bias_term + r_unbias_term
+    else: # there are no examples to recall, which means there are no positives to falsely labe negative
+        recall = 1.
+    #if precision == 0. and recall == 0.:
+    #    print '{t} ; {prate:0.2f}, {Up} : {rrate:0.2f}, {Ur}:: '.format(t=threshold, prate=p_bias_rate, rrate=r_bias_rate, Up=Up, Ur=Ur)
     return precision, recall
 
 def importance_weighted_pr_curve(y_trues, y_pred_probs, is_biased, n_thresholds=100):
@@ -239,7 +247,9 @@ def bootstrap_f1_ci(trues, preds, is_biased, random_seed=None, **bootstrap_kwds)
 def bootstrap_aupr_ci(trues, preds, is_biased, random_seed=None, **bootstrap_kwds):
     """ Get bootstrap confidence intervals around IW-AUPR score. """
     def scorer(trues, preds, is_biased):
+        #plt.hist(preds, bins=100, alpha=.25)
         ps, rs, ts = importance_weighted_pr_curve(trues, preds, is_biased, n_thresholds=50)
+        #plt.plot(rs, ps, alpha=.5)
         return area_under_pr_curve(ps, rs)
     return iw_bootstrap_score_ci(trues, preds, is_biased, scorer,
                               random_seed=random_seed,

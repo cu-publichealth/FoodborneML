@@ -30,14 +30,17 @@ def classify(batch =10000):
 		sick_preds_pos_probs = yelp_sick_classifier.predict_proba(texts)[:,1] 
 		mult_preds_pos_probs = yelp_mult_classifier.predict_proba(texts)[:,1]
 		review_requests=[]
+		feed_requests=[]
 		for i, review in enumerate(batch):
 			sick_score=sick_preds_pos_probs[i]
 			mult_score=mult_preds_pos_probs[i] if sick_score>=0.5 else 0
-			classification ={ "total_score":(sick_score+mult_score)/2 }
-			update = {"$set": {"classification" : classification }}
+			review["classification"] ={ "total_score":(sick_score+mult_score)/2 }
+			update = {"$set": {"classification" : review["classification"]}}
+			update_feed = {"$set": review}
 			review_requests.append(UpdateOne({"_id": review["_id"]}, update ))
+			feed_requests.append(UpdateOne({"_id": review["_id"]}, update_feed, upsert=True ))
 		db.reviews.bulk_write(review_requests,ordered=False)
-		db.yelp_feed.bulk_write(review_requests,ordered=False)
+		db.yelp_feed.bulk_write(feed_requests,ordered=False)
 
 
 if __name__ == '__main__':

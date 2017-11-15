@@ -2,7 +2,7 @@
 
 This repo contains the results for the publication "Discovering Foodborne Illness in Online Restaurant Reviews", to appear in JAMIA 2017.
 
-`Official Results.ipynb` contains the reproducible experiments from the paper. (To actually be able to run the experiments you need the data, which can be requested from [Tom Effland](mailto:teffland.cs.columbia.edu).)
+`Official Results.ipynb` contains the reproducible experiments from the paper. (To actually be able to run the experiments you need the data, which may be requested from [Tom Effland](mailto:teffland.cs.columbia.edu), although we cannot guarantee that we can fulfill the request.)
 
 `sick_results.csv` and `mult_results.csv` contain the final performance metrics from `Official Results.ipynb` (These correspond to Tables 1 and 2 in the paper, respectively)
 

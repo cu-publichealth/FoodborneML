@@ -114,7 +114,9 @@ def importance_weighted_precision_recall(y_trues, y_pred_probs, is_biased, thres
         p_bias_term = p_bias_rate * (1./Up) * ((y_trues == 1) & biased_and_Up).sum()
         p_unbias_term = (1. - p_bias_rate) * (1./Up) * ((y_trues == 1) & unbiased_and_Up).sum()
         precision = p_bias_term + p_unbias_term
-    else: # model has no positive classifications, which means it's made no precision errors
+    elif y_trues.sum(): # model has no positive classifications, but there are some it should've caught
+        precision = 0.
+    else: # there are no positives missed, which means it's made no precision errors
         precision = 1.
 
     # find recall at this threshold

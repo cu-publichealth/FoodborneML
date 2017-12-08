@@ -12,7 +12,7 @@ random_seed = 0
 print 'Getting data...',
 data = setup_baseline_data(train_regime='gold', test_regime='silver', random_seed=random_seed)
 train_data = data['train_data']
-U = data['U']
+all_B_over_U = data['all_B_over_U']
 print 'Done'
 
 N = 500
@@ -29,7 +29,7 @@ score_kwds = {
     'xs':train_data['text'],
     'ys':train_data['is_foodborne'],
     'bs':train_data['is_biased'],
-    'U':U,
+    'all_B_over_U':all_B_over_U,
     'fit_weight_kwd':'logreg__sample_weight',
     'n_cv_splits':5,
     'random_seed':random_seed

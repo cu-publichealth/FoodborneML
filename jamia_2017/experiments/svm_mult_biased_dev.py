@@ -13,7 +13,7 @@ random_seed = 0
 print 'Getting data...',
 data = setup_baseline_data(train_regime='biased', test_regime='silver', random_seed=random_seed)
 train_data = data['train_data']
-U = data['U']
+all_B_over_U = data['all_B_over_U']
 print 'Done'
 
 N = 500
@@ -22,15 +22,14 @@ random_hyperparams = {
     'count__max_df':npr.uniform(.75, 1.0, N),
     'tfidf__norm':npr.choice(['l1', 'l2', None], N),
     'tfidf__use_idf':npr.choice([True, False], N),
-    'svc__C':npr.choice(np.logspace(-3,4, 10000), N),
-    'svc__kernel':npr.choice(['linear', 'rbf'], N)
+    'svc__base_estimator__C':npr.choice(np.logspace(-3,4, 10000), N)
 }
 
 score_kwds = {
     'xs':train_data['text'],
     'ys':train_data['is_multiple'],
     'bs':train_data['is_biased'],
-    'U':U,
+    'all_B_over_U':all_B_over_U,
     'fit_weight_kwd':'svc__sample_weight',
     'n_cv_splits':5,
     'random_seed':random_seed

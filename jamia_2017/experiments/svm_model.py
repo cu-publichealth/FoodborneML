@@ -1,7 +1,8 @@
 from sklearn.pipeline import Pipeline
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.feature_extraction.text import TfidfTransformer
-from sklearn.svm import SVC
+from sklearn.svm import LinearSVC
+from sklearn.calibration import CalibratedClassifierCV
 
 # svm pipeline def
 f1 = CountVectorizer(
@@ -22,7 +23,7 @@ f1 = CountVectorizer(
         binary=False,
         )
 tfidf = TfidfTransformer(norm='l2', use_idf=True)
-svc = SVC(kernel='linear', C=30, probability=True)
+svc = CalibratedClassifierCV(LinearSVC(C=30))
 model = Pipeline([
         ('count', f1),
         ('tfidf', tfidf),

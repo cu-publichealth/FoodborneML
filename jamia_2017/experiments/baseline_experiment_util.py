@@ -30,7 +30,7 @@ def setup_baseline_data(train_regime='gold',
 
     unbiased = pd.read_csv(osp.join(data_path, 'fixed_unbiased.csv'), encoding='utf8')
     unbiased.date = pd.to_datetime(unbiased.date)
-    U = len(unbiased) + len(biased)
+    all_B_over_U = len(biased) / float(len(unbiased) + len(biased))
 
     if train_regime == 'gold':
         old_unbiased = pd.read_excel(osp.join(data_path, 'historical_unbiased.xlsx'),
@@ -86,59 +86,65 @@ def setup_baseline_data(train_regime='gold',
             'text':new_biased['text'].tolist() + new_unbiased['text'].tolist(),
             'is_foodborne':new_biased['is_foodborne'].tolist() + new_unbiased['is_foodborne'].tolist(),
             'is_multiple':new_biased['is_multiple'].tolist() + new_unbiased['is_multiple'].tolist(),
-            'is_biased':[True]*len(new_biased) + [False]*len(new_unbiased)
+            'is_biased':[True]*len(new_biased) + [False]*len(new_unbiased),
+            'all_B_over_U':all_B_over_U
         },
-        'U':U
+        'all_B_over_U':all_B_over_U
     }
 
-def calc_train_importance_weights(is_biased, U):
+def calc_importance_weights(is_biased, all_B_over_U):
     """ Get the IW for bias-corrected error rate. """
     B = float(sum(is_biased))
-    Bc = len(is_biased) - B + 1e-15 # for stability when all are biased
-    w_B = 1./U
-    w_Bc = (1.-(B/U))*(1./Bc)
+    B_c = len(is_biased) - B + 1e-15 # for stability when all are biased
+    w_B = ((B + B_c)/B) * all_B_over_U#1./U
+    w_Bc = ((B + B_c)/B_c) * (1- all_B_over_U)#(1.-(B/U))*(1./Bc)
     iw = np.array([w_B if label else w_Bc for label in is_biased])
-    rescaled = (len(is_biased)/iw.sum())*iw
-    return rescaled
+    #rescaled = (len(is_biased)/iw.sum())*iw
+    return iw
 
-def importance_weighted_precision_recall(y_trues, y_pred_probs, is_biased, threshold=.5):
+def importance_weighted_precision_recall(y_trues, y_pred_probs, iws, threshold=.5):
     """ Calculate the precision and recall with bias correction. """
     # find the precision at this threshold
     in_Up = y_pred_probs >= threshold # same as predictions at this threshold
     Up = in_Up.sum().astype(np.float32) # number of positive predictions
-    
+    in_Ur = y_trues == 1 # same as true positives
+    Ur = in_Ur.sum().astype(np.float32) # number of positive examples
+
     if Up > 0.: # model has made some positive classifications
-        biased_and_Up = is_biased & in_Up
-        unbiased_and_Up = (~is_biased) & in_Up
-        p_bias_rate = sum(biased_and_Up)/Up
-        p_bias_term = p_bias_rate * (1./Up) * ((y_trues == 1) & biased_and_Up).sum()
-        p_unbias_term = (1. - p_bias_rate) * (1./Up) * ((y_trues == 1) & unbiased_and_Up).sum()
-        precision = p_bias_term + p_unbias_term
-    else: # model has no positive classifications, which means it's made no precision errors
+        precision = iws[in_Up & in_Ur].sum() / iws[in_Up].sum()
+        # biased_and_Up = is_biased & in_Up
+        # unbiased_and_Up = (~is_biased) & in_Up
+        # p_bias_rate = sum(biased_and_Up)/Up
+        # p_bias_term = p_bias_rate * (1./(sum(biased_and_Up)+1e-15)) * ((y_trues == 1) & biased_and_Up).sum()
+        # p_unbias_term = (1. - p_bias_rate) * (1./(sum(unbiased_and_Up)+1e-15)) * ((y_trues == 1) & unbiased_and_Up).sum()
+        # precision = p_bias_term + p_unbias_term
+    elif y_trues.sum(): # model has no positive classifications, but there are some it should've caught
+        precision = 0.
+    else: # there are no positives missed, which means it's made no precision errors
         precision = 1.
 
     # find recall at this threshold
-    in_Ur = y_trues == 1 # same as true positives
-    Ur = in_Ur.sum().astype(np.float32) # number of positive examples
+
     if Ur > 0.: # there are positive examples
-        biased_and_Ur = is_biased & in_Ur
-        unbiased_and_Ur = (~is_biased) & in_Ur
-        r_bias_rate = sum(biased_and_Ur)/Ur
-        r_bias_term = r_bias_rate * (1./Ur) * (in_Up & biased_and_Ur).sum() # in_Up is same as preds
-        r_unbias_term = (1. - r_bias_rate) * (1./Ur) * (in_Up & unbiased_and_Ur).sum()
-        recall = r_bias_term + r_unbias_term
+        recall = iws[in_Up & in_Ur].sum()/iws[in_Ur].sum()
+        # biased_and_Ur = is_biased & in_Ur
+        # unbiased_and_Ur = (~is_biased) & in_Ur
+        # r_bias_rate = sum(biased_and_Ur)/Ur
+        # r_bias_term = r_bias_rate * (1./(sum(biased_and_Ur)+1e-15)) * (in_Up & biased_and_Ur).sum() # in_Up is same as preds
+        # r_unbias_term = (1. - r_bias_rate) * (1./(sum(unbiased_and_Ur)+1e-15)) * (in_Up & unbiased_and_Ur).sum()
+        # recall = r_bias_term + r_unbias_term
     else: # there are no examples to recall, which means there are no positives to falsely labe negative
         recall = 1.
     #if precision == 0. and recall == 0.:
     #    print '{t} ; {prate:0.2f}, {Up} : {rrate:0.2f}, {Ur}:: '.format(t=threshold, prate=p_bias_rate, rrate=r_bias_rate, Up=Up, Ur=Ur)
     return precision, recall
 
-def importance_weighted_pr_curve(y_trues, y_pred_probs, is_biased, n_thresholds=100):
+def importance_weighted_pr_curve(y_trues, y_pred_probs, iws, n_thresholds=100):
     """ Calculate a whole bias-corrected PR-curve. """
-    thresholds = np.linspace(1, 0, n_thresholds)
+    thresholds = np.linspace(np.max(y_pred_probs), 0, n_thresholds)
     precisions, recalls = [], []
     for t in thresholds:
-        p, r = importance_weighted_precision_recall(y_trues, y_pred_probs, is_biased, t)
+        p, r = importance_weighted_precision_recall(y_trues, y_pred_probs, iws, t)
         precisions.append(p)
         recalls.append(r)
         if r >= 1.:
@@ -152,7 +158,7 @@ def area_under_pr_curve(precisions, recalls):
         aupr += .5 * (recalls[i+1] - recalls[i]) * (precisions[i] + precisions[i+1])
     return aupr
 
-def score_model(model, xs, ys, bs, U, fit_weight_kwd, n_cv_splits, random_seed):
+def score_model(model, xs, ys, bs, all_B_over_U, fit_weight_kwd, n_cv_splits, random_seed):
     """ For dev tuning, take a model and score using cross-validation. """
     folds = StratifiedKFold(n_splits=n_cv_splits, random_state=random_seed)
     stratify_on_these = ['{},{}'.format(y,b) for y,b in zip(ys, bs)]
@@ -167,12 +173,14 @@ def score_model(model, xs, ys, bs, U, fit_weight_kwd, n_cv_splits, random_seed):
         dev_ys = np.array(ys)[dev_idx]
         dev_is_biased = np.array(bs)[dev_idx]
 
-        train_importance_weights = calc_train_importance_weights(train_is_biased, U)
-        model.fit(train_text, train_ys, **{fit_weight_kwd:train_importance_weights})
+        importance_weights = calc_importance_weights(train_is_biased, all_B_over_U)
+        model.fit(train_text, train_ys, **{fit_weight_kwd:importance_weights})
         scored_devs = model.predict_proba(dev_text)[:,1]
-        dev_precisions, dev_recalls, _ = importance_weighted_pr_curve(dev_ys, scored_devs, dev_is_biased)
-        dev_aupr = area_under_pr_curve(dev_precisions, dev_recalls)
-        dev_scores.append(dev_aupr)
+        dev_precision, dev_recall = importance_weighted_precision_recall(dev_ys, scored_devs, importance_weights, threshold=.5)
+        dev_f1 = f1(dev_precision, dev_recall)
+        # dev_precisions, dev_recalls, _ = importance_weighted_pr_curve(dev_ys, scored_devs, importance_weights)
+        # dev_aupr = area_under_pr_curve(dev_precisions, dev_recalls)
+        dev_scores.append(dev_f1)
     return np.array(dev_scores)
 
 def random_search(model, random_hyperparams, model_fname, **score_kwds):
@@ -209,7 +217,8 @@ def ci(xbar, samples, confidence_level=.95):
     ci_top = xbar - np.percentile(diffs, 100.*alpha)
     return ci_bottom, ci_top
 
-def iw_bootstrap_score_ci(trues, preds, is_biased, scoring_func,
+def iw_bootstrap_score_ci(trues, preds, is_biased, importance_weights,
+                          scoring_func,
                           B=1000, confidence_level=.95,
                           random_seed=None,
                           **scoring_func_kwds):
@@ -219,7 +228,7 @@ def iw_bootstrap_score_ci(trues, preds, is_biased, scoring_func,
     https://ocw.mit.edu/courses/mathematics/18-05-introduction-to-probability-and-statistics-spring-2014/readings/MIT18_05S14_Reading24.pdf
     """
     if random_seed: npr.seed(random_seed)
-    xbar = scoring_func(trues, preds, is_biased, **scoring_func_kwds)
+    xbar = scoring_func(trues, preds, importance_weights, **scoring_func_kwds)
     samples = []
     biased_idxs = np.argwhere(is_biased).ravel()
     nonbiased_idxs = np.argwhere(~is_biased).ravel()
@@ -231,27 +240,27 @@ def iw_bootstrap_score_ci(trues, preds, is_biased, scoring_func,
                                 npr.choice(nonbiased_idxs, len(nonbiased_idxs))])
         else:
             sample = npr.choice(biased_idxs, len(biased_idxs))
-        samples.append(scoring_func(trues[sample], preds[sample], is_biased[sample], **scoring_func_kwds))
+        samples.append(scoring_func(trues[sample], preds[sample], importance_weights[sample], **scoring_func_kwds))
     ci_bottom, ci_top = ci(xbar, samples, confidence_level)
     return xbar, ci_bottom, ci_top, samples
 
-def bootstrap_f1_ci(trues, preds, is_biased, random_seed=None, **bootstrap_kwds):
+def bootstrap_f1_ci(trues, preds, is_biased, importance_weights, random_seed=None, **bootstrap_kwds):
     """ Get bootstrap confidence intervals around IW-F1 score. """
-    def scorer(trues, preds, is_biased):
-        p, r = importance_weighted_precision_recall(trues, preds, is_biased, threshold=.5)
+    def scorer(trues, preds, importance_weights):
+        p, r = importance_weighted_precision_recall(trues, preds, importance_weights, threshold=.5)
         return f1(p,r)
-    return iw_bootstrap_score_ci(trues, preds, is_biased, scorer,
+    return iw_bootstrap_score_ci(trues, preds, is_biased, importance_weights, scorer,
                               random_seed=random_seed,
                               **bootstrap_kwds)
 
-def bootstrap_aupr_ci(trues, preds, is_biased, random_seed=None, **bootstrap_kwds):
+def bootstrap_aupr_ci(trues, preds, is_biased, importance_weights, random_seed=None, **bootstrap_kwds):
     """ Get bootstrap confidence intervals around IW-AUPR score. """
-    def scorer(trues, preds, is_biased):
+    def scorer(trues, preds, importance_weights):
         #plt.hist(preds, bins=100, alpha=.25)
-        ps, rs, ts = importance_weighted_pr_curve(trues, preds, is_biased, n_thresholds=50)
+        ps, rs, ts = importance_weighted_pr_curve(trues, preds, importance_weights, n_thresholds=50)
         #plt.plot(rs, ps, alpha=.5)
         return area_under_pr_curve(ps, rs)
-    return iw_bootstrap_score_ci(trues, preds, is_biased, scorer,
+    return iw_bootstrap_score_ci(trues, preds, is_biased, importance_weights, scorer,
                               random_seed=random_seed,
                               **bootstrap_kwds)
 
@@ -298,10 +307,12 @@ def model_report(model, title, label_key, save_fname=None, test_data=None, **boo
     """ Generate the test report of a model, for use in the paper. """
     y_trues = np.array(test_data[label_key])
     is_biased = np.array(test_data['is_biased'])
+    importance_weights = calc_importance_weights(is_biased, test_data['all_B_over_U'])
     y_preds = model.predict(test_data['text'])
     y_pred_probs = model.predict_proba(test_data['text'])[:,1]
-    ps, rs, ts = importance_weighted_pr_curve(y_trues, y_pred_probs, is_biased)
-    aupr, aupr_ci_bottom, aupr_ci_top, samples = bootstrap_aupr_ci(y_trues, y_pred_probs, is_biased, **bootstrap_kwds)
+    ps, rs, ts = importance_weighted_pr_curve(y_trues, y_pred_probs, importance_weights)
+    # print(zip(ps.tolist(), rs.tolist(), ts.tolist()))
+    aupr, aupr_ci_bottom, aupr_ci_top, samples = bootstrap_aupr_ci(y_trues, y_pred_probs, is_biased, importance_weights, **bootstrap_kwds)
 #     print '--- {} ---'.format(title)
 #     print '  Precision@.5, Recall@.5: {0:2.2f}, {1:2.2f}'.format(precision, recall)
 #     print '  AUPR: {0:2.2f}'.format(aupr)
@@ -313,8 +324,8 @@ def model_report(model, title, label_key, save_fname=None, test_data=None, **boo
     axs[0,0].legend(loc=8)
 
     # plot out cms for mixed, biased, and nonbiased
-    precision_m, recall_m = importance_weighted_precision_recall(y_trues, y_pred_probs, is_biased, .5)
-    f1_ci_m = bootstrap_f1_ci(y_trues, y_pred_probs, is_biased, **bootstrap_kwds)
+    precision_m, recall_m = importance_weighted_precision_recall(y_trues, y_pred_probs, importance_weights, .5)
+    f1_ci_m = bootstrap_f1_ci(y_trues, y_pred_probs, is_biased, importance_weights, **bootstrap_kwds)
     cm = confusion_matrix(y_trues, y_preds)
     subplot_confusion_matrix(cm,
                              ['Not Sick', 'Sick'],
@@ -327,10 +338,12 @@ def model_report(model, title, label_key, save_fname=None, test_data=None, **boo
     # biased
     precision_b, recall_b = importance_weighted_precision_recall(y_trues[is_biased],
                                                                  y_pred_probs[is_biased],
-                                                                is_biased[is_biased], .5)
+                                                                 importance_weights[is_biased],
+                                                                 .5)
     f1_ci_b = bootstrap_f1_ci(y_trues[is_biased],
                               y_pred_probs[is_biased],
                               is_biased[is_biased],
+                              importance_weights[is_biased],
                               **bootstrap_kwds)
     cm = confusion_matrix(y_trues[is_biased], y_preds[is_biased])
     subplot_confusion_matrix(cm,
@@ -346,7 +359,7 @@ def model_report(model, title, label_key, save_fname=None, test_data=None, **boo
     # but we do it anyways in case the dataset were to change
     precision, recall = importance_weighted_precision_recall(y_trues[~is_biased],
                                                              y_pred_probs[~is_biased],
-                                                             is_biased[~is_biased], .5)
+                                                             importance_weights[~is_biased], .5)
     cm = confusion_matrix(y_trues[~is_biased], y_preds[~is_biased])
     subplot_confusion_matrix(cm, ['Not Sick', 'Sick'], fig, axs[1,1],
                              title="Nonbiased (all No's)",
@@ -394,14 +407,15 @@ def model_report(model, title, label_key, save_fname=None, test_data=None, **boo
         'biased_f1_samples':f1_ci_b[3]
     }
 
-def prototype_model_report(trues, preds, is_biased, title, save_fname=None, **bootstrap_kwds):
+def prototype_model_report(trues, preds, is_biased, title, all_B_over_U, save_fname=None, **bootstrap_kwds):
     """ Doesn't run model, since prototype scores are loaded from csv. (It's a java model)."""
     y_trues = np.array(trues)
     is_biased = np.array(is_biased)
+    importance_weights = calc_importance_weights(is_biased, all_B_over_U)
     y_pred_probs = np.array(preds)
     y_preds = (y_pred_probs >= .5).astype(np.int32)
-    ps, rs, ts = importance_weighted_pr_curve(y_trues, y_pred_probs, is_biased)
-    aupr, aupr_ci_bottom, aupr_ci_top, samples = bootstrap_aupr_ci(y_trues, y_pred_probs, is_biased, **bootstrap_kwds)
+    ps, rs, ts = importance_weighted_pr_curve(y_trues, y_pred_probs, importance_weights)
+    aupr, aupr_ci_bottom, aupr_ci_top, samples = bootstrap_aupr_ci(y_trues, y_pred_probs, is_biased, importance_weights, **bootstrap_kwds)
     fig, axs = plt.subplots(2,2, figsize=(8,8))
     axs[0,0].plot(rs, ps, label='AUPR: {0:2.3f} CI=({1:2.3f}, {2:2.3f})'.format(aupr, aupr_ci_bottom, aupr_ci_top))
     axs[0,0].set_title('Precision Recall Curve')
@@ -410,8 +424,8 @@ def prototype_model_report(trues, preds, is_biased, title, save_fname=None, **bo
     axs[0,0].legend(loc=8)
 
     # plot out cms for mixed, biased, and nonbiased
-    precision_m, recall_m = importance_weighted_precision_recall(y_trues, y_pred_probs, is_biased, .5)
-    f1_ci_m = bootstrap_f1_ci(y_trues, y_pred_probs, is_biased, **bootstrap_kwds)
+    precision_m, recall_m = importance_weighted_precision_recall(y_trues, y_pred_probs, importance_weights, .5)
+    f1_ci_m = bootstrap_f1_ci(y_trues, y_pred_probs, is_biased, importance_weights, **bootstrap_kwds)
     cm = confusion_matrix(y_trues, y_preds)
     subplot_confusion_matrix(cm, ['Not Sick', 'Sick'], fig, axs[0,1],
                              title='Mixed Bias',
@@ -419,8 +433,8 @@ def prototype_model_report(trues, preds, is_biased, title, save_fname=None, **bo
     # biased
     precision_b, recall_b = importance_weighted_precision_recall(y_trues[is_biased],
                                                              y_pred_probs[is_biased],
-                                                             is_biased[is_biased], .5)
-    f1_ci_b = bootstrap_f1_ci(y_trues[is_biased], y_pred_probs[is_biased], is_biased[is_biased], **bootstrap_kwds)
+                                                             importance_weights[is_biased], .5)
+    f1_ci_b = bootstrap_f1_ci(y_trues[is_biased], y_pred_probs[is_biased], is_biased[is_biased], importance_weights[is_biased], **bootstrap_kwds)
     cm = confusion_matrix(y_trues[is_biased], y_preds[is_biased])
     subplot_confusion_matrix(cm, ['Not Sick', 'Sick'], fig, axs[1,0],
                              title='Biased',
@@ -430,7 +444,7 @@ def prototype_model_report(trues, preds, is_biased, title, save_fname=None, **bo
     # but we do it anyways in case the dataset were to change
     precision, recall = importance_weighted_precision_recall(y_trues[~is_biased],
                                                              y_pred_probs[~is_biased],
-                                                             is_biased[~is_biased], .5)
+                                                             importance_weights[~is_biased], .5)
     cm = confusion_matrix(y_trues[~is_biased], y_preds[~is_biased])
     subplot_confusion_matrix(cm, ['Not Sick', 'Sick'], fig, axs[1,1],
                              title="Nonbiased (all No's)",
@@ -492,9 +506,10 @@ def precision_at_recall(model, label_key, desired_recall, test_data=None):
     """
     y_trues = np.array(test_data[label_key])
     is_biased = np.array(test_data['is_biased'])
+    importance_weights = calc_importance_weights(is_biased, test_data['all_B_over_U'])
     y_preds = model.predict(test_data['text'])
     y_pred_probs = model.predict_proba(test_data['text'])[:,1]
-    ps, rs, ts = importance_weighted_pr_curve(y_trues, y_pred_probs, is_biased)
+    ps, rs, ts = importance_weighted_pr_curve(y_trues, y_pred_probs, importance_weights)
     closest = sorted(zip(ps, rs, ts), key=lambda x:abs(x[1]-desired_recall))[0]
     return closest + (closest[1]-desired_recall,)
 
@@ -505,12 +520,13 @@ def pr_curves(model_list, title_list, main_title, label_key,
     """ Plot pr curves for some list of models. """
     y_trues = np.array(test_data[label_key])
     is_biased = np.array(test_data['is_biased'])
+    importance_weights = calc_importance_weights(is_biased, test_data['all_B_over_U'])
 
     fig, ax = plt.subplots(1,1, figsize=figsize)
     for i, (model, title) in enumerate(zip(model_list, title_list)):
         y_preds = model.predict(test_data['text'])
         y_pred_probs = model.predict_proba(test_data['text'])[:,1]
-        ps, rs, ts = importance_weighted_pr_curve(y_trues, y_pred_probs, is_biased)
+        ps, rs, ts = importance_weighted_pr_curve(y_trues, y_pred_probs, importance_weights)
         dash = dashes[i] if dashes else [1]
         ax.plot(rs, ps, dashes=dash, label='{}'.format(title))
     ax.set_xlim(*xlim)

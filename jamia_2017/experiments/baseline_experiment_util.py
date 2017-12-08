@@ -161,10 +161,11 @@ def score_model(model, xs, ys, bs, all_B_over_U, fit_weight_kwd, n_cv_splits, ra
         dev_ys = np.array(ys)[dev_idx]
         dev_is_biased = np.array(bs)[dev_idx]
 
-        importance_weights = calc_importance_weights(train_is_biased, all_B_over_U)
-        model.fit(train_text, train_ys, **{fit_weight_kwd:importance_weights})
+        train_importance_weights = calc_importance_weights(train_is_biased, all_B_over_U)
+        model.fit(train_text, train_ys, **{fit_weight_kwd:train_importance_weights})
         scored_devs = model.predict_proba(dev_text)[:,1]
-        dev_precision, dev_recall = importance_weighted_precision_recall(dev_ys, scored_devs, importance_weights, threshold=.5)
+        dev_importance_weights = calc_importance_weights(dev_is_biased, all_B_over_U)
+        dev_precision, dev_recall = importance_weighted_precision_recall(dev_ys, scored_devs, dev_importance_weights, threshold=.5)
         dev_f1 = f1(dev_precision, dev_recall)
         # dev_precisions, dev_recalls, _ = importance_weighted_pr_curve(dev_ys, scored_devs, importance_weights)
         # dev_aupr = area_under_pr_curve(dev_precisions, dev_recalls)

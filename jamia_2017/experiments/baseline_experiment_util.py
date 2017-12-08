@@ -111,22 +111,7 @@ def importance_weighted_precision_recall(y_trues, y_pred_probs, iws, threshold=.
     Ur = in_Ur.sum().astype(np.float32) # number of positive examples
 
     if Up > 0.: # model has made some positive classifications
-<<<<<<< HEAD
         precision = iws[in_Up & in_Ur].sum() / iws[in_Up].sum()
-        # biased_and_Up = is_biased & in_Up
-        # unbiased_and_Up = (~is_biased) & in_Up
-        # p_bias_rate = sum(biased_and_Up)/Up
-        # p_bias_term = p_bias_rate * (1./(sum(biased_and_Up)+1e-15)) * ((y_trues == 1) & biased_and_Up).sum()
-        # p_unbias_term = (1. - p_bias_rate) * (1./(sum(unbiased_and_Up)+1e-15)) * ((y_trues == 1) & unbiased_and_Up).sum()
-        # precision = p_bias_term + p_unbias_term
-=======
-        biased_and_Up = is_biased & in_Up
-        unbiased_and_Up = (~is_biased) & in_Up
-        p_bias_rate = sum(biased_and_Up)/Up
-        p_bias_term = p_bias_rate * (1./(sum(biased_and_Up)+1e-15)) * ((y_trues == 1) & biased_and_Up).sum()
-        p_unbias_term = (1. - p_bias_rate) * (1./(sum(unbiased_and_Up)+1e-15)) * ((y_trues == 1) & unbiased_and_Up).sum()
-        precision = p_bias_term + p_unbias_term
->>>>>>> 81d820b84b3c057978258bb5f893da80144e1a52
     elif y_trues.sum(): # model has no positive classifications, but there are some it should've caught
         precision = 0.
     else: # there are no positives missed, which means it's made no precision errors
@@ -135,22 +120,7 @@ def importance_weighted_precision_recall(y_trues, y_pred_probs, iws, threshold=.
     # find recall at this threshold
 
     if Ur > 0.: # there are positive examples
-<<<<<<< HEAD
         recall = iws[in_Up & in_Ur].sum()/iws[in_Ur].sum()
-        # biased_and_Ur = is_biased & in_Ur
-        # unbiased_and_Ur = (~is_biased) & in_Ur
-        # r_bias_rate = sum(biased_and_Ur)/Ur
-        # r_bias_term = r_bias_rate * (1./(sum(biased_and_Ur)+1e-15)) * (in_Up & biased_and_Ur).sum() # in_Up is same as preds
-        # r_unbias_term = (1. - r_bias_rate) * (1./(sum(unbiased_and_Ur)+1e-15)) * (in_Up & unbiased_and_Ur).sum()
-        # recall = r_bias_term + r_unbias_term
-=======
-        biased_and_Ur = is_biased & in_Ur
-        unbiased_and_Ur = (~is_biased) & in_Ur
-        r_bias_rate = sum(biased_and_Ur)/Ur
-        r_bias_term = r_bias_rate * (1./(sum(biased_and_Ur)+1e-15)) * (in_Up & biased_and_Ur).sum() # in_Up is same as preds
-        r_unbias_term = (1. - r_bias_rate) * (1./(sum(unbiased_and_Ur)+1e-15)) * (in_Up & unbiased_and_Ur).sum()
-        recall = r_bias_term + r_unbias_term
->>>>>>> 81d820b84b3c057978258bb5f893da80144e1a52
     else: # there are no examples to recall, which means there are no positives to falsely labe negative
         recall = 1.
     #if precision == 0. and recall == 0.:

@@ -1,6 +1,7 @@
 # Discovering Foodborne Illness in Online Restaurant Reviews
 
-This repo contains the results for the publication "Discovering Foodborne Illness in Online Restaurant Reviews", to appear in JAMIA 2017.
+This repo contains the results for the paper [Discovering Foodborne Illness in Online Restaurant Reviews](https://academic.oup.com/jamia/advance-article/doi/10.1093/jamia/ocx093/4725036), published in [JAMIA](https://academic.oup.com/jamia
+), October 10, 2018.
 
 `Official Results.ipynb` contains the reproducible experiments from the paper. (To actually be able to run the experiments you need the data, which may be requested from [Tom Effland](mailto:teffland.cs.columbia.edu), although we cannot guarantee that we can fulfill the request.)
 
@@ -37,3 +38,18 @@ sick_pred_pos_probs  = yelp_sick_classifier.predict_proba(numpy_array_of_utf8_or
 mult_pred_pos_probs = yelp_mult_classifier.predict_proba(numpy_array_of_utf8_or_str)[:,1]
 ```
 
+If you use any of the code or models in this repository, please cite:
+```
+@article{doi:10.1093/jamia/ocx093,
+  author = {Effland, Thomas and Lawson, Anna and Balter, Sharon and Devinney, Katelynn and Reddy, Vasudha and Waechter, HaeNa   and Gravano, Luis and Hsu, Daniel},
+  title = {Discovering foodborne illness in online restaurant reviews},
+  journal = {Journal of the American Medical Informatics Association},
+  volume = {},
+  number = {},
+  pages = {ocx093},
+  year = {2018},
+  doi = {10.1093/jamia/ocx093},
+  URL = { + http://dx.doi.org/10.1093/jamia/ocx093},
+  eprint = {/oup/backfile/content_public/journal/jamia/pap/10.1093_jamia_ocx093/4/ocx093.pdf}
+}
+```

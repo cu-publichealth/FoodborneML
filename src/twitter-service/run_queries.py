@@ -1,14 +1,17 @@
 from time import sleep
 from pymongo import UpdateOne
 
+import logging
 
-
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
 
 def search(twitter_api, query, since_id):
 	parameters={'q': query ,'count': 100 ,'lang':'en','tweet_mode': 'extended', 'since_id': since_id, 'geocode': '40.6700,-73.9400,53mi'}
 	query_result=[]
 	while True:
-		try: 
+		try:
+			logger.info(f'Running API request with parameters {parameters}') 
 			result=twitter_api.search(**parameters)
 			query_result.extend(result['statuses'])
 			sleep(2)
@@ -18,7 +21,7 @@ def search(twitter_api, query, since_id):
 			except:
 				break
 		except Exception as e:
-			print(e)
+			logger.warning(f'Exception while running query {query} with since_id={since_id}', exc_info=True)
 			sleep(60)
 	return query_result
 
@@ -35,6 +38,7 @@ def run_queries(twitter_api, queries, db):
 	while True:
 		for query in queries:
 			try:
+				logger.info(f'Running query {query}')
 				max_query_id = db.query_max_id.find_one({'_id': query})
 				since_id = max_query_id['max_id'] if max_query_id else -1
 				tweets = [add_source(rename_id(x)) for x in  search(twitter_api, query, since_id) if 'retweeted_status' not in x]
@@ -44,5 +48,5 @@ def run_queries(twitter_api, queries, db):
 					new_max_id={ 'max_id': tweets[0]['_id']}
 					db.query_max_id.update_one({'_id': query},{"$set":new_max_id}, upsert=True)
 			except Exception as e:
-				print(e, flush=True)
+				logger.warning(f'Exception while running query {query}', exc_info=True)
 				sleep(60)

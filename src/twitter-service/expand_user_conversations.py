@@ -1,6 +1,10 @@
 from time import sleep
 from datetime import datetime
 
+import logging
+
+logger = logging.getLogger(__name__)
+
 def expand_conversation(twitter_api,tweet_id):
 	for i in range(2):
 		try:
@@ -8,7 +12,7 @@ def expand_conversation(twitter_api,tweet_id):
 			sleep(1)
 			return twitter_api.show_status(**query)
 		except Exception as e:
-			print(e)
+			logger.warning('Exception while getting conversation tweet', exc_info=True)
 			sleep(60)
 	return None
 
@@ -34,5 +38,5 @@ def expand_user_conversations(twitter_api, db):
 				update_expansion["$set"]={'conversationTrackingAttemptedDate': datetime.utcnow() }
 				db.tweets.update_one({'_id':tweet['_id']},update_expansion)
 		except Exception as e:
-			print(e, flush=True)
+			logger.warning('Exception while expanding conversations', exc_info=True)
 			sleep(60)

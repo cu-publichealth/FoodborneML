@@ -1,6 +1,12 @@
 from time import sleep
 from datetime import datetime
 
+
+import logging
+
+logger = logging.getLogger(__name__)
+
+
 def expand_user(twitter_api,user_id,parameters):
 	for i in range(2):
 		try:
@@ -8,7 +14,7 @@ def expand_user(twitter_api,user_id,parameters):
 			sleep(0.6)
 			return twitter_api.get_user_timeline(**query)
 		except Exception as e:
-			print(e)
+			logger.warning(f'Exception while getting tweets of user {user_id}', exc_info=True)
 			sleep(60)
 	return []
 
@@ -32,5 +38,5 @@ def expand_user_timelines(twitter_api, db):
 					update_expansion["$push"]={"relatedTweets": {"$each": tweets}}
 				db.tweets.update_one({'_id':tweet['_id']},update_expansion)
 		except Exception as e:
-			print(e, flush=True)
+			logger.warning(f'Exception while expanding user timelines', exc_info=True)
 			sleep(60)

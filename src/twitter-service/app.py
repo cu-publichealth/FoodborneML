@@ -7,6 +7,7 @@ import configparser
 import threading
 import logging
 
+logging.basicConfig()
 
 
 def search_config():
@@ -16,9 +17,11 @@ def search_config():
 	return {'app_key': twitter_config['consumer_key'],
 			'app_secret': twitter_config['consumer_secret']}
 
-def getTwitter():
+def getTwitterToken(config):
 	config=search_config()
-	access_token=Twython(**config, oauth_version=2).obtain_access_token()
+	return Twython(**config, oauth_version=2).obtain_access_token()
+
+def getTwitter(config, access_token):
 	return Twython(config['app_key'], access_token=access_token)
 
 
@@ -28,10 +31,11 @@ def getTwitter():
 
 
 if __name__ == '__main__':
-	twitter_api=getTwitter()
+	config = search_config()
+	token = getTwitterToken(config)
 	queries = ['#foodpoisoning','#stomachache','"food poison"','"food poisoning"','stomach','vomit','puke','diarrhea','"the runs"']
 	client = MongoClient('mongodb://mongo:27017/')
 	db = client.fdbnyc
-	threading.Thread(target=run_queries,args=(twitter_api, queries, db)).start()
-	threading.Thread(target=expand_user_timelines,args=(twitter_api,db)).start()
-	threading.Thread(target=expand_user_conversations,args=(twitter_api,db)).start()
+	threading.Thread(target=run_queries,args=(getTwitter(config, token), queries, db)).start()
+	threading.Thread(target=expand_user_timelines,args=(getTwitter(config, token), db)).start()
+	threading.Thread(target=expand_user_conversations,args=(getTwitter(config, token), db)).start()

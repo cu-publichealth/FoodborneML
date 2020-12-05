@@ -4,9 +4,9 @@
 
 Columbia University, Computer Science Department 
 
-This repo holds the code for our system that analyzes social media documents and extracts evidence of foodborne illness outbreaks in restaruants. 
+This repo holds the code for our system that analyzes social media documents and extracts evidence of foodborne illness outbreaks in restaurants. 
 
-This system has been developed and maintained at Columbia University and has been serving API requests on a daily basis by the NYC Department of Health and Mental Hygiene and the Los Angeles County Department of Public Health.
+This system has been developed and maintained at Columbia University and has been serving daily API requests by the NYC Department of Health and Mental Hygiene and the Los Angeles County Department of Public Health.
 
 ## Structure of the repo: 
 

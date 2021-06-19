@@ -1,3 +1,6 @@
 [submodule "cross-lingual"]
 	path = cross-lingual
 	url = https://github.com/gkaramanolakis/CLTS.git
+[submodule "weakly-supervised-cotraining"]
+	path = weakly-supervised-cotraining
+	url = https://github.com/gkaramanolakis/ISWD.git

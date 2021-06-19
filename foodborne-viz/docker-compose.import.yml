@@ -1,0 +1,12 @@
+version: '3'
+
+services:
+  mongo_seed:
+    build: ./build_scripts
+    command: "${IMPORT}"
+    env_file:
+      - .env
+    links:
+      - mongo
+    depends_on:
+      - mongo

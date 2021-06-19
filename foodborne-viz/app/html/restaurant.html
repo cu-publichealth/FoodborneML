@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html>
+
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+<!--    <script src = "https://code.jquery.com/jquery-1.10.2.js"></script>-->
+    <script src = "https://code.jquery.com/ui/1.10.4/jquery-ui.js"></script>
+    <script src = "https://d3js.org/d3.v4.js"></script>
+
+     <link href = "https://code.jquery.com/ui/1.10.4/themes/ui-lightness/jquery-ui.css"
+              rel = "stylesheet">
+    <link href="https://use.fontawesome.com/releases/v5.13.0/css/all.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js" integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q" crossorigin="anonymous"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js" integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl" crossorigin="anonymous"></script>
+
+    <link href="/foodbornemap/css/styles.css" rel="stylesheet" type="text/css">
+    <script src = "/foodbornemap/js/histogram.js"></script>
+    <script src = "/foodbornemap/js/reviewDisplay.js"></script>
+
+      <style>
+        .ui-slider-horizontal {
+            width: 100%;
+        }
+
+          #info{
+              width:50%;
+              margin-left: 20px;
+          }
+      </style>
+
+  <body onload="loadReviews()">
+
+       <div id="slider-box-restaurant" class="text-box">
+
+            <div class="slider-title">Sick Review Slider</div>
+
+            <div id="sick-slider-text" class="rest-info"></div>
+            <div id = "sick-review-slider"></div>
+
+
+            <div class="slider-title">Date Slider</div>
+            <form id="select-form" style = "display: inline; float: right;">
+              <select id="date-select" class="form-control form-control-sm" style="height: 30px;">
+                  <option selected="selected" value = "custom">Custom</option>
+                  <option value = "week">Last Week</option>
+                  <option value = "month">Last Month</option>
+                  <option value = "6month">Last 6 Months</option>
+                  <option value = "year">Last Year</option>
+              </select>
+            </form>
+            <div id="date-slider-text" class="rest-info" style="margin-top: 3px;"></div>
+            <div id = "date-slider"></div>
+
+            <div id="radio-buttons" class="btn-group btn-group-sm btn-group-toggle" data-toggle="buttons" style="margin-top:5px">
+                <label class="btn btn-secondary">
+                    <input type="radio" name="classification" value="classification" onchange="updateExpandedReviews()" utocomplete="off">LR
+                </label>
+                 <label class="btn btn-secondary">
+                    <input type="radio" name="classification" value="classification_hsan" onchange="updateExpandedReviews()" autocomplete="off">HSAN
+                 </label>
+                 <label class="btn btn-secondary active">
+                    <input type="radio" name="classification" value="union" autocomplete="off" onchange="updateExpandedReviews()" checked>Union
+                 </label>
+            </div>
+
+	</div>
+
+       <div id="info">
+
+       <a href="#" target = "_blank" id="rest-title"></a>
+       <div class="rest-info">
+           <div class="rest-info-title"><img id="rest-rating"><span id="total-reviews" class="rest-info-span"></span></div>
+       </div>
+       <p></p>
+       <div class="rest-info">
+           <i class="fas fa-map-marker-alt"></i>
+           <span id="address" class="rest-info-span"></span>
+       </div>
+       <div class="rest-info">
+           <i class="fas fa-phone"></i>
+           <span id="phone-number" class="rest-info-span"></span>
+       </div>
+        <div class="rest-info">
+           <i class="fas fa-globe-americas"></i>
+           <span class="rest-info-span"><a href="#" target = "_blank" id="rest-website"></a></span>
+       </div>
+        <div class="rest-info">
+           <i class="fas fa-chart-line"></i>
+           <span id="sick-score" class="rest-info-span"></span>
+       </div>
+           <p></p>
+       <div class="rest-info" style="width:25%;">
+         <form style = "margin-top: 4px;">
+              <select id="sort-by-select" class="form-control form-control-sm">
+                  <option selected="selected" value = "date">Sort By Date</option>
+                  <option value = "hsan">Sort By HSAN</option>
+                  <option value = "lr">Sort By LR</option>
+              </select>
+         </form>
+           <p></p>
+       </div>
+            <div id="expanded-reviews"></div>
+        </div>
+      <div id="restaurant-histogram"></div>
+
+    <script>
+        var sickReviewBottomThreshold = {{ review_bottom_threshold }}
+        var businessId = '{{ business_id }}'
+        var sickReviewTopThreshold = {{ review_top_threshold }}
+        var startTime = {{ start_time }}
+        var endTime = {{ end_time }}
+        var classification = document.querySelector('input[name="classification"]:checked').value;
+        var reviews = null;
+        var reviewsToShow = [];
+        var restInfo;
+        var aboveThreshold = 0;
+
+         let margin = {top: 10, right: 30, bottom: 30, left: 40},
+                    width = 450 - margin.left - margin.right,
+                    height = 100 - margin.top - margin.bottom;
+        var dateHistogram = new Histogram('#restaurant-histogram', margin, height, width, 20, 4);
+
+          var starRatings = {
+          0.0: '0.png',
+          0.5: '0.png',
+          1.0: '1.png',
+          1.5: '1_half.png',
+          2.0: '2.png',
+          2.5: '2_half.png',
+          3.0: '3.png',
+          3.5: '3_half.png',
+          4.0: '4.png',
+          4.5: '4_half.png',
+          5.0: '5.png'
+      };
+
+        // append the svg object to the body of the page
+        function loadReviews(){
+            $.getJSON("/foodbornemap/get_restaurant_info", {'business_id': businessId}, function(info){
+                restInfo = info;
+                reviews = restInfo['reviews'];
+                updateExpandedReviews();
+            })
+        }
+
+        function updateInfo(){
+            document.getElementById('rest-title').href = restInfo.url;
+          document.getElementById('rest-title').textContent = restInfo.name;
+          document.getElementById('address').textContent = restInfo.address;
+          document.getElementById('rest-rating').src = yelpImages.getLargeImgFromRating(restInfo.rating);
+          document.getElementById('total-reviews').textContent = restInfo.review_count + ' Reviews';
+          document.getElementById('rest-website').href = restInfo.business_url;
+          document.getElementById('rest-website').textContent = restInfo.business_url;
+          document.getElementById('sick-score').textContent = aboveThreshold + ' Sick Reviews (within slider bounds)';
+          document.getElementById('phone-number').textContent = formatPhoneNumber(restInfo.phone);
+
+        }
+
+        function formatPhoneNumber(phone){
+          if (!phone){
+              return '';
+          }
+          let cleaned = ('' + phone).replace(/\D/g, '')
+          let match = cleaned.match(/^(1|)?(\d{3})(\d{3})(\d{4})$/)
+          if (match) {
+            var intlCode = (match[1] ? '+1 ' : '')
+            return [intlCode, '(', match[2], ') ', match[3], '-', match[4]].join('')
+          }
+          return null
+        }
+
+
+        $(function (){
+            $("#sick-review-slider").slider({
+                range: true,
+                min: 0.1,
+                max: 1.0,
+                step: 0.1,
+                values: [sickReviewBottomThreshold, sickReviewTopThreshold],
+                slide: function(event, ui){
+                     $("#sick-slider-text").text( ui.values[0] + " - " + ui.values[1]);
+                },
+                stop: function(event, ui){
+                    sickReviewBottomThreshold = ui.values[0];
+                    sickReviewTopThreshold = ui.values[1];
+                    updateExpandedReviews();
+                }
+		    })
+
+            let sliderStartTime = new Date(2005, 8, 2).getTime();
+
+            $("#date-slider").slider({
+                range: true,
+                min: sliderStartTime / 1000,
+                max: endTime / 1000,
+                step: 604800,
+                values: [startTime / 1000, endTime / 1000],
+                slide: function( event, ui ) {
+                     $( "#date-slider-text" ).text( getFormattedDate(new Date(ui.values[ 0 ] *1000)) + " - " + getFormattedDate(new Date(ui.values[ 1 ] *1000)));
+                 },
+                change: function(event, ui){
+                    $( "#date-slider-text" ).text( getFormattedDate(new Date(ui.values[0] *1000)) + " - " + getFormattedDate(new Date(ui.values[1] *1000)));
+                    startTime = ui.values[0] * 1000;
+                    endTime = ui.values[1] * 1000;
+                    updateExpandedReviews();
+                }
+            })
+
+            $("#sick-slider-text").text(sickReviewBottomThreshold + " - " + sickReviewTopThreshold);
+            $("#date-slider-text").text(getFormattedDate(new Date(startTime)) + " - " + getFormattedDate(new Date(endTime)));
+            $("#date-select").on("change", function() {
+                var today = new Date();
+                var option = this.value;
+                var date = new Date();
+                $("#date-slider").slider("disable");
+                if (option == 'week'){
+                    date.setDate(today.getDate() - 7);
+                }
+                else if(option == 'month'){
+                    date.setMonth(today.getMonth() - 1);
+                }
+                else if(option == '6month'){
+                    date.setMonth(today.getMonth() - 6);
+                }
+                else if(option == 'year'){
+                    date.setFullYear(today.getFullYear() - 1);
+                }
+                else{
+                    $("#date-slider").slider("enable");
+                    date = new Date(startTime);
+                }
+                $("#date-slider").slider("values", [date.getTime()/1000, today.getTime()/1000]);
+            })
+
+             $("#sort-by-select").on("change", function() {
+                let option = this.value;
+
+                if(option == 'date'){
+                    reviewDisplay.displaySickReviews('expanded-reviews', reviewsToShow, 'created', true);
+                }
+                else if(option == 'hsan'){
+                    reviewDisplay.displaySickReviews('expanded-reviews', reviewsToShow, 'classification_hsan', true);
+                }
+                else{
+                    reviewDisplay.displaySickReviews('expanded-reviews', reviewsToShow, 'classification', true);
+                }
+            })
+        })
+
+        function getFormattedDate(date) {
+          var year = date.getFullYear();
+
+          var month = (1 + date.getMonth()).toString();
+          month = month.length > 1 ? month : '0' + month;
+
+          var day = date.getDate().toString();
+          day = day.length > 1 ? day : '0' + day;
+
+          return month + '/' + day + '/' + year;
+      }
+
+    function updateExpandedReviews(){
+        reviewsForHist = [];
+        classification = document.querySelector('input[name="classification"]:checked').value;
+        aboveThreshold = 0;
+        reviewsToShow = [];
+        for(let i = 0; i < reviews.length; i++){
+            let reviewScore = 0;
+           if(classification == 'union'){
+               if ('classification_hsan' in reviews[i]){
+                   reviewScore = Math.max(reviews[i]['classification']['total_score'], reviews[i]['classification_hsan']['total_score']);
+               }
+               else{
+                   reviewScore = reviews[i]['classification']['total_score']
+               }
+           }
+           else{
+               if (classification === 'classification_hsan' && !('classification_hsan' in reviews[i])){
+                   reviewScore = reviews[i]['classification']['total_score'];
+               }
+               else{
+                   reviewScore = reviews[i][classification]['total_score'];
+               }
+           }
+
+           var reviewTime = Date.parse(reviews[i]['created']);
+
+           if (reviewScore < sickReviewBottomThreshold ||
+               reviewScore > sickReviewTopThreshold ||
+               reviewTime < startTime ||
+               reviewTime > endTime) {
+
+               continue;
+           } else {
+               reviewsForHist.push(new Date(reviewTime));
+               aboveThreshold++;
+               reviewsToShow.push(reviews[i]);
+           }
+        }
+        reviewDisplay.displaySickReviews('expanded-reviews', reviewsToShow, 'created', true);
+        dateHistogram.changeHistogram(reviewsForHist, new Date(startTime), new Date(endTime));
+        updateInfo();
+    }
+
+    </script>
+  </body>
+
+</html>

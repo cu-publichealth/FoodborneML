@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html>
+
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+<!--    <script src = "https://code.jquery.com/jquery-1.10.2.js"></script>-->
+    <script src = "https://code.jquery.com/ui/1.10.4/jquery-ui.js"></script>
+    <script src = "https://d3js.org/d3.v4.js"></script>
+
+     <link href = "https://code.jquery.com/ui/1.10.4/themes/ui-lightness/jquery-ui.css"
+              rel = "stylesheet">
+    <link href="https://use.fontawesome.com/releases/v5.13.0/css/all.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js" integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q" crossorigin="anonymous"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js" integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl" crossorigin="anonymous"></script>
+<!--     <link rel="stylesheet" type="text/css" href="/static/rating.css">-->
+    <script src = "/foodbornemap/js/histogram.js"></script>
+    <script src = "/foodbornemap/js/reviewDisplay.js"></script>
+
+    <link rel="stylesheet" type="text/css" href="/foodbornemap/css/styles.css">
+  </head>
+   <div id="data-box" class="nicebox">
+       <div class="table-row">
+          <label id="mouseover-type" class="data-label" for="mouseover-name"></label>
+          <span id="mouseover-name" class="data-value"></span>
+       </div>
+       <div class="table-row">
+          <label class="data-label" for="sick_score">Sick Review Count:</label>
+          <span id=sick_score class="data-value"></span>
+       </div>
+    </div>
+
+    <div id=slider-box class="text-box">
+
+            <div class="slider-title">Sick Review Slider</div>
+
+            <div id="sick-slider-text" class="rest-info"></div>
+            <div id = "sick-review-slider"></div>
+
+
+            <div class="slider-title">Date Slider</div>
+            <form id="select-form" style = "display: inline; float: right;">
+              <select id="date-select" class="form-control form-control-sm" style="height: 30px;">
+                  <option selected="selected" value = "custom">Custom</option>
+                  <option value = "week">Last Week</option>
+                  <option value = "month">Last Month</option>
+                  <option value = "6month">Last 6 Months</option>
+                  <option value = "year">Last Year</option>
+              </select>
+            </form>
+            <div id="date-slider-text" class="rest-info" style="margin-top: 3px;"></div>
+            <div id = "date-slider"></div>
+
+
+           <div class="slider-title">Restaurant Threshold Slider</div>
+            <div id="rest-slider-text" class="rest-info"></div>
+            <div id = "sick-rest-slider"></div>
+
+            <div id="radio-buttons" class="btn-group btn-group-sm btn-group-toggle" data-toggle="buttons" style="margin-top:5px">
+                <label class="btn btn-secondary">
+                    <input type="radio" name="classification" value="classification" autocomplete="off">LR
+                </label>
+                 <label class="btn btn-secondary">
+                    <input type="radio" name="classification" value="classification_hsan" autocomplete="off">HSAN
+                 </label>
+                 <label class="btn btn-secondary active">
+                    <input type="radio" name="classification" value="union" autocomplete="off" checked>Union
+                 </label>
+            </div>
+          <div style="margin-top:5px"><button class="btn btn-primary btn-sm" onclick="scaleUp()">Scale Up</button></div>
+	</div>
+
+   <div id="rest-info-box" class="text-box">
+       <button type="button" class="close" aria-label="Close" onclick="deselectMarker()">
+           <span aria-hidden="true">&times;</span>
+       </button>
+
+       <a href="#" target = "_blank" id="rest-title"></a>
+       <div class="rest-info">
+           <div class="rest-info-title"><img id="rest-rating"><span id="total-reviews" class="rest-info-span"></span></div>
+       </div>
+       <p></p>
+       <div class="rest-info">
+           <i class="fas fa-map-marker-alt"></i>
+           <span id="address" class="rest-info-span"></span>
+       </div>
+       <div class="rest-info">
+           <i class="fas fa-phone"></i>
+           <span id="phone-number" class="rest-info-span"></span>
+       </div>
+        <div class="rest-info">
+           <i class="fas fa-globe-americas"></i>
+           <span class="rest-info-span"><a href="#" target = "_blank" id="rest-website"></a></span>
+       </div>
+        <div class="rest-info">
+           <i class="fas fa-chart-line"></i>
+           <span id="sick-score" class="rest-info-span"></span>
+       </div>
+       <p></p>
+       <div class="rest-info" style="width: 25%;">
+         <form style = "margin-top: 4px;">
+              <select id="sort-by-select" class="form-control form-control-sm">
+                  <option selected="selected" value = "date">Sort By <b>Date</b></option>
+                  <option value = "hsan">Sort By <b>HSAN</b></option>
+                  <option value = "lr">Sort By <b>LR</b></option>
+              </select>
+         </form>
+       </div>
+       <div id="reviews">
+       </div>
+       <button class="btn btn-primary btn-sm"  onclick="openBusinessWindow()" style="float:right; margin-top:8px;">More Info</button>
+   </div>
+
+  <div id="histogram"></div>
+
+    <div id="map"></div>
+
+    <script src = "/foodbornemap/js/geo_map.js"></script>
+
+    <script async defer
+         src="https://maps.googleapis.com/maps/api/js?key={{ API_KEY }}&callback=initMap">
+    </script>
+  </body>
+</html>

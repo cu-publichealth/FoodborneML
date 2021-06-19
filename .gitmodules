@@ -1,0 +1,3 @@
+[submodule "cross-lingual"]
+	path = cross-lingual
+	url = https://github.com/gkaramanolakis/CLTS.git

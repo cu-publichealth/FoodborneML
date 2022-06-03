@@ -83,7 +83,7 @@ protobuf==3.0.0
 ptyprocess==0.5
 py==1.4.31
 py2neo==3.1.2
-Pygments==2.0.2
+Pygments==2.7.4
 pyhealth==0.1
 pylab==0.1.3
 pylint==1.5.4

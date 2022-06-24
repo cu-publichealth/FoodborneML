@@ -76,7 +76,7 @@ path.py==8.1.2
 pbr==1.10.0
 pexpect==4.0.1
 pickleshare==0.5
-Pillow==3.0.0
+Pillow==9.0.1
 plac==0.9.1
 preshed==0.46.1
 protobuf==3.0.0

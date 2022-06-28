@@ -55,7 +55,7 @@ langid==1.1.6.post0
 lazy-object-proxy==1.2.1
 lda==1.0.4.dev5
 logging==0.4.9.6
-lxml==4.1.1
+lxml==4.6.5
 MarkupSafe==0.23
 matplotlib==1.5.0
 mistune==0.8

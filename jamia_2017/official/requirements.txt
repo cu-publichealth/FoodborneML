@@ -127,7 +127,7 @@ thinc==5.0.4
 tornado==4.3
 traitlets==4.3.2
 twython==3.3.0
-ujson==1.35
+ujson==5.4.0
 webencodings==0.5
 Werkzeug==0.11.11
 word2vec==0.8.1

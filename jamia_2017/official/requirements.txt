@@ -79,7 +79,7 @@ pickleshare==0.5
 Pillow==3.0.0
 plac==0.9.1
 preshed==0.46.1
-protobuf==3.0.0
+protobuf==3.18.3
 ptyprocess==0.5
 py==1.4.31
 py2neo==3.1.2
